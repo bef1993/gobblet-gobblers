@@ -4,9 +4,9 @@ type Size int
 type Player int
 
 const (
-	None    = 0
-	Player1 = 1
-	Player2 = 2
+	None    Player = 0
+	Player1 Player = 1
+	Player2 Player = 2
 )
 
 const (
