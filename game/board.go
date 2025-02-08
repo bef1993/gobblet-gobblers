@@ -1,6 +1,9 @@
 package game
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type Board struct {
 	Grid            [3][3][]Piece
@@ -16,9 +19,17 @@ func NewBoard() *Board {
 	}
 }
 
+func (b *Board) MustMakeMove(move Move) {
+	err := b.MakeMove(move)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (b *Board) MakeMove(move Move) error {
-	if !b.IsValidMove(move) {
-		return errors.New("attempting to make illegal move")
+	valid, err := b.IsValidMove(move)
+	if !valid {
+		return err
 	}
 
 	if move.From != nil {
@@ -90,7 +101,8 @@ func (b *Board) GetPossibleMoves(player Player) []Move {
 		for col := 0; col < 3; col++ {
 			for _, piece := range b.AvailablePieces(player) {
 				move := Move{Piece: piece, From: nil, To: Position{row, col}}
-				if b.IsValidMove(move) {
+				valid, _ := b.IsValidMove(move)
+				if valid {
 					moves = append(moves, move)
 				}
 			}
@@ -102,36 +114,35 @@ func (b *Board) GetPossibleMoves(player Player) []Move {
 	return moves
 }
 
-func (b *Board) IsValidMove(move Move) bool {
-
+func (b *Board) IsValidMove(move Move) (bool, error) {
 	from, to, piece := move.From, move.To, move.Piece
 
 	// Check bounds
-	if !isWithinBounds(move.To) {
-		return false
+	if !isWithinBounds(to) {
+		return false, errors.New(fmt.Sprintf("move is out of bounds: %v", to))
 	}
 
 	// Check if player has piece available
 	if from == nil && !b.hasPieceAvailable(piece) {
-		return false
+		return false, errors.New(fmt.Sprintf("no remaining piece: %v", piece))
 	}
 
 	// If Move moves a placed piece
 	if from != nil {
 		// Check bounds
-		if !isWithinBounds(*move.From) {
-			return false
+		if !isWithinBounds(*from) {
+			return false, errors.New(fmt.Sprintf("trying to move from out of bounds: %v", from))
 		}
 
 		// Check that piece is actually there
 		pieceOnStack := b.TopPiece(*from)
 		if pieceOnStack == nil || piece != *pieceOnStack {
-			return false // TODO does this actually work?
+			return false, errors.New(fmt.Sprintf("trying to move a non-existing piece: %v %v", from, piece))
 		}
 
 		//From and To positions must be different
 		if to == *from {
-			return false
+			return false, errors.New(fmt.Sprintf("trying to move a piece to the same location: %v", from))
 		}
 
 		// Check that moving the piece would not cause the other player to win
@@ -144,7 +155,7 @@ func (b *Board) IsValidMove(move Move) bool {
 		b.Grid[from.Row][from.Col] = originalStack
 		// If opponent wins, this move is invalid
 		if winner != None {
-			return false
+			return false, errors.New(fmt.Sprintf("moving this piece would cause the other player to win: %v", from))
 		}
 	}
 
@@ -152,14 +163,18 @@ func (b *Board) IsValidMove(move Move) bool {
 
 	// If empty, any piece can be placed
 	if len(stack) == 0 {
-		return true
+		return true, nil
 	}
 
 	// Get the top piece in the stack
 	topPiece := stack[len(stack)-1]
 
-	// Ensure the piece is larger then the already placed piece
-	return piece.Size > topPiece.Size
+	// Ensure the piece is larger than the already placed piece
+	if piece.Size <= topPiece.Size {
+		return false, errors.New(fmt.Sprintf("piece to place %v must be larger than top piece %v", piece, topPiece))
+	}
+
+	return true, nil
 }
 
 func (b *Board) AvailablePieces(player Player) (pieces []Piece) {
