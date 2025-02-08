@@ -119,30 +119,30 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 
 	// Check bounds
 	if !isWithinBounds(to) {
-		return false, errors.New(fmt.Sprintf("move is out of bounds: %v", to))
+		return false, errors.New(fmt.Sprintf("move is out of bounds: %+v", to))
 	}
 
 	// Check if player has piece available
 	if from == nil && !b.hasPieceAvailable(piece) {
-		return false, errors.New(fmt.Sprintf("no remaining piece: %v", piece))
+		return false, errors.New(fmt.Sprintf("no remaining piece: %+v", piece))
 	}
 
 	// If Move moves a placed piece
 	if from != nil {
 		// Check bounds
 		if !isWithinBounds(*from) {
-			return false, errors.New(fmt.Sprintf("trying to move from out of bounds: %v", from))
+			return false, errors.New(fmt.Sprintf("trying to move from out of bounds: %+v", from))
 		}
 
 		// Check that piece is actually there
 		pieceOnStack := b.TopPiece(*from)
 		if pieceOnStack == nil || piece != *pieceOnStack {
-			return false, errors.New(fmt.Sprintf("trying to move a non-existing piece: %v %v", from, piece))
+			return false, errors.New(fmt.Sprintf("trying to move a non-existing piece: %+v %+v", from, piece))
 		}
 
 		//From and To positions must be different
 		if to == *from {
-			return false, errors.New(fmt.Sprintf("trying to move a piece to the same location: %v", from))
+			return false, errors.New(fmt.Sprintf("trying to move a piece to the same location: %+v", from))
 		}
 
 		// Check that moving the piece would not cause the other player to win
@@ -155,7 +155,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 		b.Grid[from.Row][from.Col] = originalStack
 		// If opponent wins, this move is invalid
 		if winner != None {
-			return false, errors.New(fmt.Sprintf("moving this piece would cause the other player to win: %v", from))
+			return false, errors.New(fmt.Sprintf("moving this piece would cause the other player to win: %+v", from))
 		}
 	}
 
@@ -171,7 +171,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 
 	// Ensure the piece is larger than the already placed piece
 	if piece.Size <= topPiece.Size {
-		return false, errors.New(fmt.Sprintf("piece to place %v must be larger than top piece %v", piece, topPiece))
+		return false, errors.New(fmt.Sprintf("piece to place %+v must be larger than top piece %+v", piece, topPiece))
 	}
 
 	return true, nil
