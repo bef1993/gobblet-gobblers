@@ -11,4 +11,14 @@ type Position struct {
 	Col int
 }
 
-// TODO implement 2 Move constructors (for placing and moving a piece)
+func NewMove(player Player, row, col int, size Size) Move {
+	return Move{Piece: Piece{Owner: player, Size: size},
+		From: nil,
+		To:   Position{Row: row, Col: col}}
+}
+
+func NewMoveExisting(player Player, fromRow, fromCol int, size Size, toRow, toCol int) Move {
+	return Move{Piece: Piece{Owner: player, Size: size},
+		From: &Position{Row: fromRow, Col: fromCol},
+		To:   Position{Row: toRow, Col: toCol}}
+}
