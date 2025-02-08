@@ -118,3 +118,32 @@ func TestMovingPieceWouldCauseOtherPlayerToWin(t *testing.T) {
 		t.Errorf("Moving piece that would cause the other player to win is illegal")
 	}
 }
+
+func TestGetPossibleMoves(t *testing.T) {
+	board := NewBoard()
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player1, Size: Small}, To: Position{0, 0}})
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player1, Size: Small}, To: Position{0, 1}})
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player2, Size: Medium}, To: Position{0, 0}})
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player2, Size: Medium}, To: Position{0, 1}})
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player1, Size: Large}, To: Position{0, 0}})
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player1, Size: Large}, To: Position{0, 1}})
+
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player2, Size: Small}, To: Position{1, 0}})
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player1, Size: Medium}, To: Position{1, 0}})
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player2, Size: Large}, To: Position{1, 0}})
+
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player2, Size: Small}, To: Position{2, 0}})
+
+	possibleMoves := board.GetPossibleMoves(Player1)
+	if len(possibleMoves) != 12 {
+		t.Errorf("GetPossibleMoves() should have returned 12 possible moves")
+	}
+
+	board.MustMakeMove(Move{Piece: Piece{Owner: Player1, Size: Medium}, To: Position{2, 0}})
+
+	possibleMoves = board.GetPossibleMoves(Player2)
+	if len(possibleMoves) != 6 {
+		t.Errorf("GetPossibleMoves() should have returned 6 possible moves")
+	}
+
+}

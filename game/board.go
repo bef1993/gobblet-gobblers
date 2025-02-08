@@ -41,17 +41,19 @@ func (b *Board) MakeMove(move Move) error {
 }
 
 func (b *Board) placePiece(p Position, piece Piece) {
-	stack := b.GetPositionStack(p)
+	stack := b.getPositionStack(p)
 	b.Grid[p.Row][p.Col] = append(stack, piece)
 	b.RemainingPieces[piece.Owner][piece.Size]--
 }
 
 func (b *Board) removePiece(p Position) {
-	if b.TopPiece(p) == nil {
+	topPiece := b.TopPiece(p)
+	if topPiece == nil {
 		panic("attempting to remove piece from empty position")
 	}
-	stack := b.GetPositionStack(p)
+	stack := b.getPositionStack(p)
 	b.Grid[p.Row][p.Col] = stack[:len(stack)-1]
+	b.RemainingPieces[topPiece.Owner][topPiece.Size]++
 }
 
 func (b *Board) TopPiece(p Position) *Piece {
@@ -97,6 +99,7 @@ func (b *Board) checkLine(p1, p2, p3 *Piece) Player {
 func (b *Board) GetPossibleMoves(player Player) []Move {
 	var moves []Move
 
+	// Try placing new pieces
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			for _, piece := range b.AvailablePieces(player) {
@@ -109,8 +112,41 @@ func (b *Board) GetPossibleMoves(player Player) []Move {
 		}
 	}
 
-	// TODO should also return moves where a piece is moved
+	//Try moving already placed pieces
+	for fromRow := 0; fromRow < 3; fromRow++ {
+		for fromCol := 0; fromCol < 3; fromCol++ {
+			fromPos := Position{Row: fromRow, Col: fromCol}
+			stack := b.getPositionStack(fromPos)
+			topPiece := b.TopPiece(fromPos)
 
+			// Skip empty positions
+			if len(stack) == 0 {
+				continue
+			}
+
+			// Only consider moves where the top piece belongs to the player
+			if topPiece.Owner != player {
+				continue
+			}
+
+			// Try moving to every other position
+			for toRow := 0; toRow < 3; toRow++ {
+				for toCol := 0; toCol < 3; toCol++ {
+					toPos := Position{Row: toRow, Col: toCol}
+
+					// Don't move to the same position
+					if fromPos == toPos {
+						continue
+					}
+
+					move := Move{Piece: *topPiece, From: &fromPos, To: toPos}
+					if valid, _ := b.IsValidMove(move); valid {
+						moves = append(moves, move)
+					}
+				}
+			}
+		}
+	}
 	return moves
 }
 
@@ -146,7 +182,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 		}
 
 		// Check that moving the piece would not cause the other player to win
-		originalStack := b.GetPositionStack(*from)
+		originalStack := b.getPositionStack(*from)
 		// Temporarily remove the top piece
 		b.Grid[from.Row][from.Col] = originalStack[:len(originalStack)-1]
 		// Check if the opponent wins
@@ -202,6 +238,6 @@ func (b *Board) hasPieceAvailable(piece Piece) bool {
 	return b.RemainingPieces[piece.Owner][piece.Size] >= 1
 }
 
-func (b *Board) GetPositionStack(p Position) []Piece {
+func (b *Board) getPositionStack(p Position) []Piece {
 	return b.Grid[p.Row][p.Col]
 }
