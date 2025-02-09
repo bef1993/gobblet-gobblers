@@ -154,7 +154,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	from, to, piece := move.From, move.To, move.Piece
 
 	// Check bounds
-	if !isWithinBounds(to) {
+	if to.IsOutOfBounds() {
 		return false, errors.New(fmt.Sprintf("move is out of bounds: %+v", to))
 	}
 
@@ -166,7 +166,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	// If Move moves a placed piece
 	if from != nil {
 		// Check bounds
-		if !isWithinBounds(*from) {
+		if from.IsOutOfBounds() {
 			return false, errors.New(fmt.Sprintf("trying to move from out of bounds: %+v", from))
 		}
 
@@ -225,13 +225,6 @@ func (b *Board) AvailablePieces(player Player) (pieces []Piece) {
 	}
 
 	return pieces
-}
-
-func isWithinBounds(p Position) bool {
-	if p.Col < 0 || p.Col > 2 || p.Row < 0 || p.Row > 2 {
-		return false
-	}
-	return true
 }
 
 func (b *Board) hasPieceAvailable(piece Piece) bool {
