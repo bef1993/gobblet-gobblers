@@ -22,3 +22,14 @@ func NewMoveExisting(player Player, fromRow, fromCol int, size Size, toRow, toCo
 		From: &Position{Row: fromRow, Col: fromCol},
 		To:   Position{Row: toRow, Col: toCol}}
 }
+
+func (p Position) IsWithinBounds() bool {
+	if p.Col < 0 || p.Col > 2 || p.Row < 0 || p.Row > 2 {
+		return false
+	}
+	return true
+}
+
+func (p Position) IsOutOfBounds() bool {
+	return !p.IsWithinBounds()
+}
