@@ -43,6 +43,14 @@ func (piece Piece) String() string {
 	}
 }
 
+func (piece Piece) ID() int {
+	if piece.Owner == Player1 {
+		return int(piece.Size)
+	} else {
+		return int(piece.Owner) + 3
+	}
+}
+
 func (p Player) Opponent() Player {
 	switch p {
 	case Player1:
@@ -50,6 +58,6 @@ func (p Player) Opponent() Player {
 	case Player2:
 		return Player1
 	default:
-		return None
+		panic("can not get opponent of NonePlayer")
 	}
 }
