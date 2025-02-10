@@ -26,9 +26,9 @@ func minimax(board *game.Board, depth, alpha, beta float64, isMaximizingPlayer b
 	minEval := math.Inf(1)
 
 	for _, possibleMove := range board.GetPossibleMoves(activePlayer) {
-		// TODO maybe random shuffle moves
+		// TODO sort moves by heuristic
 		board.MustMakeMove(possibleMove)
-		// TODO skip already calculated boards
+		// TODO use transposition table to avoid recomputing identical positions (zobrist hashing)
 		eval, _ := minimax(board, depth-1, alpha, beta, !isMaximizingPlayer, activePlayer.Opponent())
 		board.MustUndoMove(possibleMove)
 
