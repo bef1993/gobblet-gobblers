@@ -53,6 +53,7 @@ func getHumanMove(activePlayer game.Player) game.Move {
 	var toRow, toCol int
 	var fromRow, fromCol *int
 	var size game.Size
+	// TODO improve move input logic
 	fmt.Println("Enter target coordinates as 'row col'")
 	for {
 		_, err := fmt.Scan(&toRow, &toCol)
