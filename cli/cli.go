@@ -1,17 +1,19 @@
-package game
+package cli
 
 import (
 	"bufio"
 	"fmt"
+	"gibhub.com/bef1993/gobblet-gobblers/ai"
+	"gibhub.com/bef1993/gobblet-gobblers/game"
 	"os"
 	"strconv"
 	"strings"
 )
 
-func PlayGame(human Player) {
-	board := NewBoard()
-	activePlayer := Player1
-	var winner Player
+func PlayGame(human game.Player) {
+	board := game.NewBoard()
+	activePlayer := game.Player1
+	var winner game.Player
 
 	for {
 		if activePlayer == human {
@@ -20,14 +22,10 @@ func PlayGame(human Player) {
 			makeAIMove(board, activePlayer)
 		}
 
-		if activePlayer == Player1 {
-			activePlayer = Player2
-		} else {
-			activePlayer = Player1
-		}
+		activePlayer = activePlayer.Opponent()
 
 		winner = board.CheckWin()
-		if winner != None {
+		if winner != game.None {
 			break
 		}
 	}
@@ -35,8 +33,8 @@ func PlayGame(human Player) {
 	fmt.Printf("Winner: Player %v\n", winner)
 }
 
-func makeHumanMove(board *Board, activePlayer Player) {
-	var move Move
+func makeHumanMove(board *game.Board, activePlayer game.Player) {
+	var move game.Move
 	for {
 		move = getHumanMove(activePlayer)
 		fmt.Printf("Playing move %+v\n", move)
@@ -47,13 +45,12 @@ func makeHumanMove(board *Board, activePlayer Player) {
 		}
 		break
 	}
-
 }
 
-func getHumanMove(activePlayer Player) Move {
+func getHumanMove(activePlayer game.Player) game.Move {
 	var toRow, toCol int
 	var fromRow, fromCol *int
-	var size Size
+	var size game.Size
 	fmt.Println("Enter target coordinates as 'row col'")
 	for {
 		_, err := fmt.Scan(&toRow, &toCol)
@@ -104,32 +101,31 @@ func getHumanMove(activePlayer Player) Move {
 		break
 	}
 
-	move := Move{Piece: Piece{Size: size, Owner: activePlayer}, To: Position{Row: toRow, Col: toCol}}
+	move := game.Move{Piece: game.Piece{Size: size, Owner: activePlayer}, To: game.Position{Row: toRow, Col: toCol}}
 	if fromRow != nil && fromCol != nil {
-		move.From = &Position{Row: *fromRow, Col: *fromCol}
+		move.From = &game.Position{Row: *fromRow, Col: *fromCol}
 	}
 
 	return move
 }
 
-func makeAIMove(board *Board, activePlayer Player) {
-	// TODO make actual ai move
-	move := board.GetPossibleMoves(activePlayer)[0]
-	fmt.Printf("AI move %+v\n", move)
+func makeAIMove(board *game.Board, activePlayer game.Player) {
+	move := ai.GetBestMove(board, activePlayer)
+	fmt.Printf("Playing move %+v\n", move)
 	board.MustMakeMove(move)
 }
 
-func DetermineHumanPlayer() (Player, error) {
+func DetermineHumanPlayer() (game.Player, error) {
 	for {
 		var player int
 		_, err := fmt.Scanln(&player)
 		if err != nil {
-			return None, err
+			return game.None, err
 		}
 		if player == 1 {
-			return Player1, nil
+			return game.Player1, nil
 		} else if player == 2 {
-			return Player2, nil
+			return game.Player2, nil
 		} else {
 			fmt.Println("Type '1' or '2'")
 			continue

@@ -40,6 +40,14 @@ func (b *Board) MakeMove(move Move) error {
 	return nil
 }
 
+func (b *Board) MustUndoMove(move Move) {
+	// TODO add checks if valid
+	if move.From != nil {
+		b.placePiece(*move.From, move.Piece)
+	}
+	b.removePiece(move.To)
+}
+
 func (b *Board) placePiece(p Position, piece Piece) {
 	stack := b.getPositionStack(p)
 	b.Grid[p.Row][p.Col] = append(stack, piece)

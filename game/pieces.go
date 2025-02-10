@@ -19,3 +19,14 @@ type Piece struct {
 	Owner Player
 	Size  Size
 }
+
+func (p Player) Opponent() Player {
+	switch p {
+	case Player1:
+		return Player2
+	case Player2:
+		return Player1
+	default:
+		return None
+	}
+}
