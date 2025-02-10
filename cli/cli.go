@@ -15,13 +15,15 @@ func PlayGame(human game.Player) {
 	activePlayer := game.Player1
 	var winner game.Player
 
+	printBoard(board)
 	for {
+
 		if activePlayer == human {
 			makeHumanMove(board, human)
 		} else {
 			makeAIMove(board, activePlayer)
 		}
-
+		printBoard(board)
 		activePlayer = activePlayer.Opponent()
 
 		winner = board.CheckWin()
@@ -131,4 +133,23 @@ func DetermineHumanPlayer() (game.Player, error) {
 			continue
 		}
 	}
+}
+
+func printBoard(board *game.Board) {
+	fmt.Println("  0   1   2 ")
+	fmt.Println(" ───────────")
+
+	for row := 0; row < 3; row++ {
+		fmt.Print(row, "| ")
+		for col := 0; col < 3; col++ {
+			topPiece := board.TopPiece(game.Position{Row: row, Col: col})
+			if topPiece == nil {
+				fmt.Print("  ")
+			} else {
+				fmt.Print(topPiece.String() + " ")
+			}
+		}
+		fmt.Println()
+	}
+	fmt.Println(" ───────────")
 }

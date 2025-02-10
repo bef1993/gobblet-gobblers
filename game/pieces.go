@@ -1,5 +1,10 @@
 package game
 
+import (
+	"github.com/fatih/color"
+	"strconv"
+)
+
 type Size int
 type Player int
 
@@ -18,6 +23,24 @@ const (
 type Piece struct {
 	Owner Player
 	Size  Size
+}
+
+func (piece Piece) String() string {
+	var size string
+	switch piece.Size {
+	case Small:
+		size = "S"
+	case Medium:
+		size = "M"
+	case Large:
+		size = "L"
+	}
+	str := strconv.Itoa(int(piece.Owner)) + size
+	if piece.Owner == Player1 {
+		return color.RedString(str)
+	} else {
+		return color.GreenString(str)
+	}
 }
 
 func (p Player) Opponent() Player {
