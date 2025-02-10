@@ -12,14 +12,8 @@ const (
 	maxDepth   float64 = 5
 )
 
-func GetBestMove(board *game.Board, player game.Player) game.Move {
-	var isMaximizingPlayer bool
-	if player == game.Player1 {
-		isMaximizingPlayer = true
-	} else {
-		isMaximizingPlayer = false
-	}
-	_, bestMove := minimax(board, maxDepth, math.Inf(-1), math.Inf(1), isMaximizingPlayer, player)
+func GetBestMove(board *game.Board, activePlayer game.Player) game.Move {
+	_, bestMove := minimax(board, maxDepth, math.Inf(-1), math.Inf(1), isMaximizingPlayer(activePlayer), activePlayer)
 	return bestMove
 }
 
@@ -72,4 +66,8 @@ func Evaluate(b *game.Board) float64 {
 	default:
 		panic("game state could not be evaluated")
 	}
+}
+
+func isMaximizingPlayer(player game.Player) bool {
+	return player == game.Player1
 }
