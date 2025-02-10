@@ -12,19 +12,17 @@ import (
 
 func PlayGame(human game.Player) {
 	board := game.NewBoard()
-	activePlayer := game.Player1
 	var winner game.Player
 
 	printBoard(board)
 	for {
 
-		if activePlayer == human {
-			makeHumanMove(board, human)
+		if board.ActivePlayer == human {
+			makeHumanMove(board)
 		} else {
-			makeAIMove(board, activePlayer)
+			makeAIMove(board)
 		}
 		printBoard(board)
-		activePlayer = activePlayer.Opponent()
 
 		winner = board.CheckWin()
 		if winner != game.None {
@@ -35,10 +33,10 @@ func PlayGame(human game.Player) {
 	fmt.Printf("Winner: Player %v\n", winner)
 }
 
-func makeHumanMove(board *game.Board, activePlayer game.Player) {
+func makeHumanMove(board *game.Board) {
 	var move game.Move
 	for {
-		move = getHumanMove(activePlayer)
+		move = getHumanMove(board.ActivePlayer)
 		fmt.Printf("Playing move %+v\n", move)
 		err := board.MakeMove(move)
 		if err != nil {
@@ -112,8 +110,8 @@ func getHumanMove(activePlayer game.Player) game.Move {
 	return move
 }
 
-func makeAIMove(board *game.Board, activePlayer game.Player) {
-	move := ai.GetBestMove(board, activePlayer)
+func makeAIMove(board *game.Board) {
+	move := ai.GetBestMove(board)
 	fmt.Printf("Playing move %+v\n", move)
 	board.MustMakeMove(move)
 }
@@ -139,7 +137,7 @@ func DetermineHumanPlayer() (game.Player, error) {
 func printBoard(board *game.Board) {
 	fmt.Println("  0   1   2 ")
 	fmt.Println(" ───────────")
-
+	// TODO fix misalignment of columns
 	for row := 0; row < 3; row++ {
 		fmt.Print(row, "| ")
 		for col := 0; col < 3; col++ {

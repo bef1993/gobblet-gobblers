@@ -8,6 +8,7 @@ import (
 type Board struct {
 	Grid            [3][3][]Piece
 	RemainingPieces map[Player][]int
+	ActivePlayer    Player
 }
 
 func NewBoard() *Board {
@@ -16,7 +17,9 @@ func NewBoard() *Board {
 			Player1: {2, 2, 2},
 			Player2: {2, 2, 2},
 		},
+		ActivePlayer: Player1,
 	}
+
 }
 
 func (b *Board) MustMakeMove(move Move) {
@@ -36,16 +39,19 @@ func (b *Board) MakeMove(move Move) error {
 		b.removePiece(*move.From)
 	}
 	b.placePiece(move.To, move.Piece)
-
+	b.ActivePlayer = b.ActivePlayer.Opponent()
 	return nil
 }
 
 func (b *Board) MustUndoMove(move Move) {
-	// TODO add checks if valid
+	if !b.isValidUndo(move) {
+		panic("undo move invalid")
+	}
 	if move.From != nil {
 		b.placePiece(*move.From, move.Piece)
 	}
 	b.removePiece(move.To)
+	b.ActivePlayer = b.ActivePlayer.Opponent()
 }
 
 func (b *Board) placePiece(p Position, piece Piece) {
@@ -104,13 +110,13 @@ func (b *Board) checkLine(p1, p2, p3 *Piece) Player {
 	return None
 }
 
-func (b *Board) GetPossibleMoves(player Player) []Move {
+func (b *Board) GetPossibleMoves() []Move {
 	var moves []Move
 
 	// Try placing new pieces
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
-			for _, piece := range b.AvailablePieces(player) {
+			for _, piece := range b.AvailablePieces(b.ActivePlayer) {
 				move := Move{Piece: piece, From: nil, To: Position{row, col}}
 				valid, _ := b.IsValidMove(move)
 				if valid {
@@ -133,7 +139,7 @@ func (b *Board) GetPossibleMoves(player Player) []Move {
 			}
 
 			// Only consider moves where the top piece belongs to the player
-			if topPiece.Owner != player {
+			if topPiece.Owner != b.ActivePlayer {
 				continue
 			}
 
@@ -164,6 +170,16 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	// Check bounds
 	if to.IsOutOfBounds() {
 		return false, errors.New(fmt.Sprintf("move is out of bounds: %+v", to))
+	}
+
+	// Check winner
+	if b.CheckWin() != None {
+		return false, errors.New(fmt.Sprintf("game is already won"))
+	}
+
+	// Check piece belongs to active player
+	if move.Piece.Owner != b.ActivePlayer {
+		return false, errors.New(fmt.Sprintf("trying to place/move piece of opponent player: %+v", move.Piece.Owner))
 	}
 
 	// Check if player has piece available
@@ -241,4 +257,9 @@ func (b *Board) hasPieceAvailable(piece Piece) bool {
 
 func (b *Board) getPositionStack(p Position) []Piece {
 	return b.Grid[p.Row][p.Col]
+}
+
+func (b *Board) isValidUndo(move Move) bool {
+	// TODO implement
+	return true
 }
