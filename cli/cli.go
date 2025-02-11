@@ -1,14 +1,16 @@
 package cli
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
 	"gibhub.com/bef1993/gobblet-gobblers/ai"
 	"gibhub.com/bef1993/gobblet-gobblers/game"
-	"os"
-	"strconv"
+	"regexp"
 	"strings"
+	"unicode"
 )
+
+const RegexMovePattern = "^[abcABC][1-3] ([sS]|[mM]|[lL]|[abcABC][1-3])$"
 
 func PlayGame(human game.Player) {
 	board := game.NewBoard()
@@ -18,8 +20,10 @@ func PlayGame(human game.Player) {
 	for {
 
 		if board.ActivePlayer == human {
+			printAvailablePieces(board)
 			makeHumanMove(board)
 		} else {
+			fmt.Println("Waiting for AI to make move ...")
 			makeAIMove(board)
 		}
 		printBoard(board)
@@ -36,7 +40,7 @@ func PlayGame(human game.Player) {
 func makeHumanMove(board *game.Board) {
 	var move game.Move
 	for {
-		move = getHumanMove(board.ActivePlayer)
+		move = getHumanMove(board)
 		fmt.Printf("Playing move %+v\n", move)
 		err := board.MakeMove(move)
 		if err != nil {
@@ -47,67 +51,25 @@ func makeHumanMove(board *game.Board) {
 	}
 }
 
-func getHumanMove(activePlayer game.Player) game.Move {
-	var toRow, toCol int
-	var fromRow, fromCol *int
-	var size game.Size
-	// TODO improve move input logic
-	fmt.Println("Enter target coordinates as 'row col'")
+func getHumanMove(board *game.Board) (move game.Move) {
+	fmt.Println("Placing piece: b2 S")
+	fmt.Println("Moving piece: b1 a0")
+	fmt.Println("Enter your move:")
 	for {
-		_, err := fmt.Scan(&toRow, &toCol)
+		var input1, input2 string
+		n, err := fmt.Scan(&input1, &input2)
+		if err != nil || n != 2 {
+			fmt.Println("Invalid input")
+			continue
+		}
+		move, err = ParseMove(strings.Join([]string{input1, input2}, " "), board)
 		if err != nil {
-			fmt.Println("Invalid input. Please enter two integers.")
+			fmt.Println("Invalid input. Please enter move again:")
 			continue
 		}
-		break
+		return move
 	}
 
-	fmt.Println("Enter piece size (Small = 0, Medium = 1, Large = 2)")
-	for {
-		_, err := fmt.Scan(&size)
-		if err != nil {
-			fmt.Println("Invalid piece size. Please enter a valid size.")
-			continue
-		}
-		break
-	}
-
-	fmt.Println("Hit Enter to place a new piece or enter coordinates as 'row col' to move existing piece")
-	for {
-		reader := bufio.NewReader(os.Stdin)
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-		if input == "" {
-			break
-		}
-
-		// Split input by whitespace
-		parts := strings.Split(input, " ")
-		if len(parts) != 2 {
-			fmt.Println("Invalid format! Enter as row,col (e.g.  1 2).")
-			continue
-		}
-
-		// Convert input to integers
-		var err1, err2 error
-		fromRowInput, err1 := strconv.Atoi(parts[0])
-		fromColInput, err2 := strconv.Atoi(parts[1])
-		if err1 != nil || err2 != nil {
-			fmt.Println("Invalid input!")
-			continue
-		}
-		fromRow = &fromRowInput
-		fromCol = &fromColInput
-
-		break
-	}
-
-	move := game.Move{Piece: game.Piece{Size: size, Owner: activePlayer}, To: game.Position{Row: toRow, Col: toCol}}
-	if fromRow != nil && fromCol != nil {
-		move.From = &game.Position{Row: *fromRow, Col: *fromCol}
-	}
-
-	return move
 }
 
 func makeAIMove(board *game.Board) {
@@ -135,15 +97,15 @@ func DetermineHumanPlayer() (game.Player, error) {
 }
 
 func printBoard(board *game.Board) {
-	fmt.Println("  0   1   2 ")
+	fmt.Println("  a   b   c ")
 	fmt.Println(" ───────────")
 	// TODO fix misalignment of columns
 	for row := 0; row < 3; row++ {
-		fmt.Print(row, "| ")
+		fmt.Print(row+1, "| ")
 		for col := 0; col < 3; col++ {
 			topPiece := board.TopPiece(game.Position{Row: row, Col: col})
 			if topPiece == nil {
-				fmt.Print("  ")
+				fmt.Print(". ")
 			} else {
 				fmt.Print(topPiece.String() + " ")
 			}
@@ -151,4 +113,81 @@ func printBoard(board *game.Board) {
 		fmt.Println()
 	}
 	fmt.Println(" ───────────")
+}
+
+func printAvailablePieces(board *game.Board) {
+	activePlayer := board.ActivePlayer
+	fmt.Printf("Available pieces: %v Small, %v Medium, %v Large\n",
+		board.RemainingPieces[activePlayer][game.Small],
+		board.RemainingPieces[activePlayer][game.Medium],
+		board.RemainingPieces[activePlayer][game.Large])
+
+}
+
+func ParseMove(input string, board *game.Board) (game.Move, error) {
+	matched, err := regexp.Match(RegexMovePattern, []byte(input))
+	if err != nil {
+		panic("invalid regex pattern")
+	}
+	if !matched {
+		return game.Move{}, errors.New("invalid move input")
+	}
+
+	inputs := strings.Split(input, " ")
+	var from *game.Position
+	var to game.Position
+	var piece game.Piece
+	if moveIsPlacingNewPiece(inputs) {
+		to = parsePosition(inputs[0])
+		size := letterToSize(inputs[1][0])
+		piece = game.Piece{Owner: board.ActivePlayer, Size: size}
+	} else {
+		position := parsePosition(inputs[0])
+		from = &position
+		to = parsePosition(inputs[1])
+		topPiece := board.TopPiece(*from)
+		if topPiece == nil {
+			piece = game.Piece{}
+		} else {
+			piece = *topPiece
+		}
+	}
+
+	return game.Move{Piece: piece, From: from, To: to}, nil
+}
+
+func parsePosition(input string) game.Position {
+	row := int(input[1]) - '0' - 1
+	col := letterToColIndex(input[0])
+	return game.Position{Row: row, Col: col}
+}
+
+func letterToColIndex(letter uint8) int {
+	switch unicode.ToLower(rune(letter)) {
+	case 'a':
+		return 0
+	case 'b':
+		return 1
+	case 'c':
+		return 2
+	default:
+		panic("invalid col letter")
+	}
+}
+
+func letterToSize(letter uint8) game.Size {
+	switch unicode.ToLower(rune(letter)) {
+	case 's':
+		return game.Small
+	case 'm':
+		return game.Medium
+	case 'l':
+		return game.Large
+	default:
+		panic("invalid size letter")
+	}
+}
+
+func moveIsPlacingNewPiece(inputs []string) bool {
+	return len(inputs[1]) == 1
 }

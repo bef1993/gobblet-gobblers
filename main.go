@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	// TODO set MaxDepth via arguments
 	fmt.Println("Welcome to Gobblet Gobblers")
 	fmt.Println("Do you want to play as Player 1 or Player 2?")
 	player, err := cli.DetermineHumanPlayer()

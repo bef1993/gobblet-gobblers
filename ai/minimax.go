@@ -34,6 +34,7 @@ func GetBestMove(board *game.Board) game.Move {
 
 func minimax(board *game.Board, depth, alpha, beta int, isMaximizingPlayer bool) (evaluation int, bestMove game.Move) {
 	hash := Hash(board)
+	// TODO implement incremental hashing
 
 	// Check the Transposition Table first
 	if found, evaluation, bestMove := lookupHash(hash, depth, alpha, beta); found {
