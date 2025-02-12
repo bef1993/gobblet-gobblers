@@ -169,7 +169,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 
 	// Check bounds
 	if to.IsOutOfBounds() {
-		return false, errors.New(fmt.Sprintf("move is out of bounds: %+v", to))
+		return false, errors.New("target position is out of bounds")
 	}
 
 	// Check winner
@@ -179,30 +179,30 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 
 	// Check piece belongs to active player
 	if move.Piece.Owner != b.ActivePlayer {
-		return false, errors.New(fmt.Sprintf("trying to place/move piece of opponent player: %+v", move.Piece.Owner))
+		return false, errors.New("piece does not belong to active player")
 	}
 
 	// Check if player has piece available
 	if from == nil && !b.hasPieceAvailable(piece) {
-		return false, errors.New(fmt.Sprintf("no remaining piece: %+v", piece))
+		return false, errors.New("player does not have piece available")
 	}
 
 	// If Move moves a placed piece
 	if from != nil {
 		// Check bounds
 		if from.IsOutOfBounds() {
-			return false, errors.New(fmt.Sprintf("trying to move from out of bounds: %+v", from))
+			return false, errors.New("origin position is out of bounds")
 		}
 
 		// Check that piece is actually there
 		pieceOnStack := b.TopPiece(*from)
 		if pieceOnStack == nil || piece != *pieceOnStack {
-			return false, errors.New(fmt.Sprintf("trying to move a non-existing piece: %+v %+v", from, piece))
+			return false, errors.New(fmt.Sprintf("piece does not exist on position"))
 		}
 
 		//From and To positions must be different
 		if to == *from {
-			return false, errors.New(fmt.Sprintf("trying to move a piece to the same location: %+v", from))
+			return false, errors.New("origin and target position are identical")
 		}
 
 		// Check that moving the piece would not cause the other player to win
@@ -215,7 +215,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 		b.Grid[from.Row][from.Col] = originalStack
 		// If opponent wins, this move is invalid
 		if winner != None {
-			return false, errors.New(fmt.Sprintf("moving this piece would cause the other player to win: %+v", from))
+			return false, errors.New("moving piece would cause the other player to win")
 		}
 	}
 
@@ -231,7 +231,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 
 	// Ensure the piece is larger than the already placed piece
 	if piece.Size <= topPiece.Size {
-		return false, errors.New(fmt.Sprintf("piece to place %+v must be larger than top piece %+v", piece, topPiece))
+		return false, errors.New("piece not larger than existing piece on position")
 	}
 
 	return true, nil
