@@ -35,10 +35,14 @@ func (b *Board) MakeMove(move Move) error {
 		return err
 	}
 
-	if move.From != nil {
-		b.removePiece(*move.From)
+	if move.MovesExistingPiece() {
+		pieceToMove := *b.TopPiece(move.From)
+		b.removePiece(move.From)
+		b.placePiece(move.To, pieceToMove)
+	} else {
+		b.placePiece(move.To, move.Piece)
 	}
-	b.placePiece(move.To, move.Piece)
+
 	b.ActivePlayer = b.ActivePlayer.Opponent()
 	return nil
 }
@@ -47,10 +51,13 @@ func (b *Board) MustUndoMove(move Move) {
 	if !b.isValidUndo(move) {
 		panic("undo move invalid")
 	}
-	if move.From != nil {
-		b.placePiece(*move.From, move.Piece)
+	if move.MovesExistingPiece() {
+		pieceToMove := *b.TopPiece(move.To)
+		b.removePiece(move.To)
+		b.placePiece(move.From, pieceToMove)
+	} else {
+		b.removePiece(move.To)
 	}
-	b.removePiece(move.To)
 	b.ActivePlayer = b.ActivePlayer.Opponent()
 }
 
@@ -117,7 +124,7 @@ func (b *Board) GetPossibleMoves() []Move {
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			for _, piece := range b.AvailablePieces(b.ActivePlayer) {
-				move := Move{Piece: piece, From: nil, To: Position{row, col}}
+				move := Move{Piece: piece, From: Position{}, To: Position{row, col}}
 				valid, _ := b.IsValidMove(move)
 				if valid {
 					moves = append(moves, move)
@@ -153,7 +160,7 @@ func (b *Board) GetPossibleMoves() []Move {
 						continue
 					}
 
-					move := Move{Piece: *topPiece, From: &fromPos, To: toPos}
+					move := Move{Piece: Piece{}, From: fromPos, To: toPos}
 					if valid, _ := b.IsValidMove(move); valid {
 						moves = append(moves, move)
 					}
@@ -168,8 +175,8 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	from, to, piece := move.From, move.To, move.Piece
 
 	// Check bounds
-	if to.IsOutOfBounds() {
-		return false, errors.New("target position is out of bounds")
+	if move.IsOutOfBounds() {
+		return false, errors.New("positions are out of bounds")
 	}
 
 	// Check winner
@@ -178,35 +185,36 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	}
 
 	// Check piece belongs to active player
-	if move.Piece.Owner != b.ActivePlayer {
+	if move.PlacesNewPiece() && move.Piece.Owner != b.ActivePlayer {
 		return false, errors.New("piece does not belong to active player")
 	}
 
 	// Check if player has piece available
-	if from == nil && !b.hasPieceAvailable(piece) {
+	if move.PlacesNewPiece() && !b.hasPieceAvailable(piece) {
 		return false, errors.New("player does not have piece available")
 	}
 
 	// If Move moves a placed piece
-	if from != nil {
-		// Check bounds
-		if from.IsOutOfBounds() {
-			return false, errors.New("origin position is out of bounds")
-		}
+	if move.MovesExistingPiece() {
 
-		// Check that piece is actually there
-		pieceOnStack := b.TopPiece(*from)
-		if pieceOnStack == nil || piece != *pieceOnStack {
+		// Check that a piece exists on position
+		pieceOnStack := b.TopPiece(from)
+		if pieceOnStack == nil {
 			return false, errors.New(fmt.Sprintf("piece does not exist on position"))
 		}
 
+		// Check that piece from position belongs to active player
+		if pieceOnStack.Owner != b.ActivePlayer {
+			return false, errors.New(fmt.Sprintf("piece does not belong to active player"))
+		}
+
 		//From and To positions must be different
-		if to == *from {
+		if to == from {
 			return false, errors.New("origin and target position are identical")
 		}
 
 		// Check that moving the piece would not cause the other player to win
-		originalStack := b.getPositionStack(*from)
+		originalStack := b.getPositionStack(from)
 		// Temporarily remove the top piece
 		b.Grid[from.Row][from.Col] = originalStack[:len(originalStack)-1]
 		// Check if the opponent wins
@@ -227,10 +235,15 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	}
 
 	// Get the top piece in the stack
-	topPiece := stack[len(stack)-1]
+	pieceOnTargetPosition := stack[len(stack)-1]
+
+	// Use pieceToMove if necessary
+	if piece == (Piece{}) {
+		piece = *b.TopPiece(from)
+	}
 
 	// Ensure the piece is larger than the already placed piece
-	if piece.Size <= topPiece.Size {
+	if piece.Size <= pieceOnTargetPosition.Size {
 		return false, errors.New("piece not larger than existing piece on position")
 	}
 

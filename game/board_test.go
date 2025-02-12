@@ -58,7 +58,7 @@ func TestOutOfBoundsMove(t *testing.T) {
 		t.Errorf("Move should be out of bounds")
 	}
 
-	err = board.MakeMove(NewMoveExisting(Player1, 0, 3, Small, 0, 0))
+	err = board.MakeMove(NewMoveExisting(0, 3, 0, 0))
 	if err == nil {
 		t.Errorf("Move should be out of bounds")
 	}
@@ -103,18 +103,18 @@ func TestMovingPiece(t *testing.T) {
 	board := NewBoard()
 	board.MustMakeMove(NewMove(Player1, 0, 0, Large))
 	board.MustMakeMove(NewMove(Player2, 1, 1, Medium))
-	board.MustMakeMove(NewMoveExisting(Player1, 0, 0, Large, 1, 1))
+	board.MustMakeMove(NewMoveExisting(0, 0, 1, 1))
 }
 
 func TestMovingNonExistingPiece(t *testing.T) {
 	board := NewBoard()
-	err := board.MakeMove(NewMoveExisting(Player1, 0, 0, Small, 1, 1))
+	err := board.MakeMove(NewMoveExisting(0, 0, 1, 1))
 	if err == nil {
 		t.Errorf("Moving non-existing piece must be illegal")
 	}
 
 	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	err = board.MakeMove(NewMoveExisting(Player1, 0, 0, Medium, 1, 1))
+	err = board.MakeMove(NewMoveExisting(0, 0, 1, 1))
 	if err == nil {
 		t.Errorf("Moving non-existing piece must be illegal")
 	}
@@ -124,7 +124,7 @@ func TestMovingPieceToSameLocation(t *testing.T) {
 	board := NewBoard()
 	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
 	board.MustMakeMove(NewMove(Player2, 1, 1, Small))
-	err := board.MakeMove(NewMoveExisting(Player1, 0, 0, Small, 0, 0))
+	err := board.MakeMove(NewMoveExisting(0, 0, 0, 0))
 	if err == nil {
 		t.Errorf("Moving piece to same location must be illegal")
 	}
@@ -134,7 +134,7 @@ func TestMovingPieceOfOtherPlayer(t *testing.T) {
 	board := NewBoard()
 	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
 
-	err := board.MakeMove(NewMoveExisting(Player2, 0, 0, Small, 1, 1))
+	err := board.MakeMove(NewMoveExisting(0, 0, 1, 1))
 	if err == nil {
 		t.Errorf("Moving piece of other player must be illegal")
 	}
@@ -147,7 +147,7 @@ func TestMovingPieceWouldCauseOtherPlayerToWin(t *testing.T) {
 	board.MustMakeMove(NewMove(Player1, 1, 1, Small))
 	board.MustMakeMove(NewMove(Player2, 2, 2, Small))
 	board.MustMakeMove(NewMove(Player1, 2, 2, Medium))
-	err := board.MakeMove(NewMoveExisting(Player2, 0, 0, Medium, 0, 2))
+	err := board.MakeMove(NewMoveExisting(0, 0, 0, 2))
 	if err == nil {
 		t.Errorf("Moving piece that would cause the other player to win is illegal")
 	}

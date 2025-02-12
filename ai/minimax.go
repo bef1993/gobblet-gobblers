@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"fmt"
 	"gibhub.com/bef1993/gobblet-gobblers/game"
 	"math"
 	"math/rand"
@@ -8,27 +9,25 @@ import (
 )
 
 const (
-	Player1Win int = 100
-	Player2Win int = -100
+	Player1Win int = 1000
+	Player2Win int = -1000
 	NoWin      int = 0
 )
 
-var MaxDepth = 7
-
-func SolvePosition(board *game.Board) (winner game.Player) {
-	evaluation, _ := minimax(board, MaxDepth, math.MinInt, math.MaxInt, isMaximizingPlayer(board.ActivePlayer))
-	switch evaluation {
-	case Player1Win:
-		return game.Player1
-	case Player2Win:
-		return game.Player2
-	default:
+func SolvePosition(board *game.Board, maxDepth int) (winner game.Player) {
+	evaluation, _ := minimax(board, maxDepth, math.MinInt, math.MaxInt, isMaximizingPlayer(board.ActivePlayer))
+	if evaluation == NoWin {
 		return game.None
+	} else if evaluation >= Player1Win {
+		return game.Player1
+	} else {
+		return game.Player2
 	}
 }
 
-func GetBestMove(board *game.Board) game.Move {
-	_, bestMove := minimax(board, MaxDepth, Player2Win, Player1Win, isMaximizingPlayer(board.ActivePlayer))
+func GetBestMove(board *game.Board, maxDepth int) game.Move {
+	eval, bestMove := minimax(board, maxDepth, math.MinInt, math.MaxInt, isMaximizingPlayer(board.ActivePlayer))
+	fmt.Printf("Evaluation: %v\n", eval)
 	return bestMove
 }
 
@@ -37,12 +36,14 @@ func minimax(board *game.Board, depth, alpha, beta int, isMaximizingPlayer bool)
 	// TODO implement incremental hashing
 
 	// Check the Transposition Table first
-	if found, evaluation, bestMove := lookupHash(hash, depth, alpha, beta); found {
-		return evaluation, bestMove
+	if found, evaluation, storedMove := lookupHash(hash, depth, alpha, beta); found {
+		if valid, _ := board.IsValidMove(storedMove); valid {
+			return evaluation, storedMove
+		}
 	}
 
 	if depth == 0 || board.CheckWin() != game.None {
-		evaluation := Evaluate(board)
+		evaluation := Evaluate(board, depth)
 		storeHash(hash, evaluation, depth, Exact)
 		return evaluation, game.Move{}
 	}
@@ -56,19 +57,24 @@ func minimax(board *game.Board, depth, alpha, beta int, isMaximizingPlayer bool)
 		board.MustUndoMove(possibleMove)
 
 		if isMaximizingPlayer {
-			alpha = max(alpha, eval)
 			if eval > maxEval {
 				maxEval = eval
 				bestMove = possibleMove
 			}
+			alpha = max(alpha, maxEval)
 		} else {
-			beta = min(beta, eval)
 			if eval < minEval {
 				minEval = eval
 				bestMove = possibleMove
 			}
+			beta = min(beta, minEval)
+		}
+
+		if beta <= alpha {
+			break
 		}
 	}
+
 	// TODO prefer moves that win harder / lose slower
 	if isMaximizingPlayer {
 		storeHash(hash, maxEval, depth, LowerBound)
@@ -79,12 +85,12 @@ func minimax(board *game.Board, depth, alpha, beta int, isMaximizingPlayer bool)
 	}
 }
 
-func Evaluate(b *game.Board) int {
+func Evaluate(b *game.Board, depthRemaining int) int {
 	switch b.CheckWin() {
 	case game.Player1:
-		return Player1Win
+		return Player1Win + depthRemaining // prefer faster wins
 	case game.Player2:
-		return Player2Win
+		return Player2Win - depthRemaining // prefer delaying losses
 	case game.None:
 		return NoWin
 	default:
