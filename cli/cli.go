@@ -17,6 +17,8 @@ func PlayGame(human game.Player) {
 	var winner game.Player
 
 	printBoard(board)
+	fmt.Println("Placing piece: b2 S   -   Moving piece: b1 a0")
+
 	for {
 
 		if board.ActivePlayer == human {
@@ -41,7 +43,6 @@ func makeHumanMove(board *game.Board) {
 	var move game.Move
 	for {
 		move = getHumanMove(board)
-		fmt.Printf("Playing move %+v\n", move)
 		err := board.MakeMove(move)
 		if err != nil {
 			fmt.Println(err)
@@ -52,8 +53,7 @@ func makeHumanMove(board *game.Board) {
 }
 
 func getHumanMove(board *game.Board) (move game.Move) {
-	fmt.Println("Placing piece: b2 S")
-	fmt.Println("Moving piece: b1 a0")
+
 	fmt.Println("Enter your move:")
 	for {
 		var input1, input2 string
@@ -73,8 +73,8 @@ func getHumanMove(board *game.Board) (move game.Move) {
 }
 
 func makeAIMove(board *game.Board) {
-	move := ai.GetBestMove(board)
-	fmt.Printf("Playing move %+v\n", move)
+	move := ai.GetBestMove(board, 7)
+	fmt.Printf("AI Move: %v\n", MoveString(move))
 	board.MustMakeMove(move)
 }
 
@@ -134,23 +134,17 @@ func ParseMove(input string, board *game.Board) (game.Move, error) {
 	}
 
 	inputs := strings.Split(input, " ")
-	var from *game.Position
+	var from game.Position
 	var to game.Position
 	var piece game.Piece
+
 	if moveIsPlacingNewPiece(inputs) {
 		to = parsePosition(inputs[0])
 		size := letterToSize(inputs[1][0])
 		piece = game.Piece{Owner: board.ActivePlayer, Size: size}
 	} else {
-		position := parsePosition(inputs[0])
-		from = &position
+		from = parsePosition(inputs[0])
 		to = parsePosition(inputs[1])
-		topPiece := board.TopPiece(*from)
-		if topPiece == nil {
-			piece = game.Piece{}
-		} else {
-			piece = *topPiece
-		}
 	}
 
 	return game.Move{Piece: piece, From: from, To: to}, nil
@@ -188,6 +182,44 @@ func letterToSize(letter uint8) game.Size {
 	}
 }
 
+func sizeToLetter(size game.Size) string {
+	switch size {
+	case game.Small:
+		return "S"
+	case game.Medium:
+		return "M"
+	case game.Large:
+		return "L"
+	default:
+		return "?"
+	}
+}
+
+func colIndexToLetter(col int) string {
+	switch col {
+	case 0:
+		return "a"
+	case 1:
+		return "b"
+	case 2:
+		return "c"
+	default:
+		return "?"
+	}
+}
+
 func moveIsPlacingNewPiece(inputs []string) bool {
 	return len(inputs[1]) == 1
+}
+
+func MoveString(move game.Move) string {
+	if move.PlacesNewPiece() {
+		return fmt.Sprintf("%v %v", PositionString(move.To), sizeToLetter(move.Piece.Size))
+	} else {
+		return fmt.Sprintf("%v %v", PositionString(move.From), PositionString(move.To))
+	}
+}
+
+func PositionString(p game.Position) string {
+	return fmt.Sprintf("%v%v", colIndexToLetter(p.Col), p.Row+1)
 }
