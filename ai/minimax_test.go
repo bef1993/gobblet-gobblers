@@ -15,10 +15,11 @@ func TestNoWin(t *testing.T) {
 	}
 }
 
-func TestWin(t *testing.T) {
+func TestPlayer1Win(t *testing.T) {
 	board := game.NewBoard()
 	board.MustMakeMove(game.NewMove(game.Player1, 1, 1, game.Small))
-	board.MustMakeMove(game.NewMove(game.Player2, 0, 0, game.Medium))
+	board.MustMakeMove(game.NewMove(game.Player2, 1, 0, game.Medium))
+	board.MustMakeMove(game.NewMove(game.Player1, 1, 1, game.Large))
 	winner := SolvePosition(board, 8)
 	if winner != game.Player1 {
 		t.Errorf("game is winnable with maxDepth 8")
