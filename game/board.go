@@ -9,6 +9,7 @@ type Board struct {
 	Grid            [3][3][]Piece
 	RemainingPieces map[Player][]int
 	ActivePlayer    Player
+	Hash            uint64
 }
 
 func NewBoard() *Board {
@@ -18,8 +19,8 @@ func NewBoard() *Board {
 			Player2: {2, 2, 2},
 		},
 		ActivePlayer: Player1,
+		Hash:         GetPlayerZobristValue(Player1),
 	}
-
 }
 
 func (b *Board) MustMakeMove(move Move) {
@@ -41,9 +42,10 @@ func (b *Board) MakeMove(move Move) error {
 		b.placePiece(move.To, pieceToMove)
 	} else {
 		b.placePiece(move.To, move.Piece)
+
 	}
 
-	b.ActivePlayer = b.ActivePlayer.Opponent()
+	b.switchActivePlayer()
 	return nil
 }
 
@@ -58,10 +60,12 @@ func (b *Board) MustUndoMove(move Move) {
 	} else {
 		b.removePiece(move.To)
 	}
-	b.ActivePlayer = b.ActivePlayer.Opponent()
+
+	b.switchActivePlayer()
 }
 
 func (b *Board) placePiece(p Position, piece Piece) {
+	b.Hash ^= GetZobristValue(p, piece)
 	stack := b.getPositionStack(p)
 	b.Grid[p.Row][p.Col] = append(stack, piece)
 	b.RemainingPieces[piece.Owner][piece.Size]--
@@ -72,6 +76,7 @@ func (b *Board) removePiece(p Position) {
 	if topPiece == nil {
 		panic("attempting to remove piece from empty position")
 	}
+	b.Hash ^= GetZobristValue(p, *topPiece)
 	stack := b.getPositionStack(p)
 	b.Grid[p.Row][p.Col] = stack[:len(stack)-1]
 	b.RemainingPieces[topPiece.Owner][topPiece.Size]++
@@ -275,4 +280,10 @@ func (b *Board) getPositionStack(p Position) []Piece {
 func (b *Board) isValidUndo(move Move) bool {
 	// TODO implement
 	return true
+}
+
+func (b *Board) switchActivePlayer() {
+	b.Hash ^= GetPlayerZobristValue(b.ActivePlayer)
+	b.ActivePlayer = b.ActivePlayer.Opponent()
+	b.Hash ^= GetPlayerZobristValue(b.ActivePlayer)
 }

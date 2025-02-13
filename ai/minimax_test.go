@@ -38,3 +38,9 @@ func TestPlayer2Win(t *testing.T) {
 		t.Errorf("winner must be Player 1")
 	}
 }
+
+// 22s with incremental zobrist hashing
+func TestBenchmarkMinimax(t *testing.T) {
+	board := game.NewBoard()
+	SolvePosition(board, 9)
+}

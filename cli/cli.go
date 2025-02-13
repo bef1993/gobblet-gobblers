@@ -37,6 +37,11 @@ func PlayGame(human game.Player) {
 	}
 
 	fmt.Printf("Winner: Player %v\n", winner)
+	// Wait for a single key press before exiting
+
+	// Consume any leftover input (to prevent immediate exit)
+	_, _ = fmt.Scanln()
+	_, _ = fmt.Scanln()
 }
 
 func makeHumanMove(board *game.Board) {
@@ -73,7 +78,7 @@ func getHumanMove(board *game.Board) (move game.Move) {
 }
 
 func makeAIMove(board *game.Board) {
-	move := ai.GetBestMove(board, 7)
+	move := ai.GetBestMove(board, 8)
 	fmt.Printf("AI Move: %v\n", MoveString(move))
 	board.MustMakeMove(move)
 }
