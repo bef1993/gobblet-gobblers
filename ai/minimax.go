@@ -14,6 +14,23 @@ const (
 	NoWin      int = 0
 )
 
+type EntryType int
+
+const (
+	Exact EntryType = iota
+	LowerBound
+	UpperBound
+)
+
+type TTEntry struct {
+	Evaluation int
+	Depth      int
+	BestMove   game.Move
+	Type       EntryType
+}
+
+var transpositionTable = make(map[uint64]TTEntry)
+
 func SolvePosition(board *game.Board, maxDepth int) (winner game.Player) {
 	evaluation, _ := minimax(board, maxDepth, math.MinInt, math.MaxInt, isMaximizingPlayer(board.ActivePlayer))
 	if evaluation == NoWin {
@@ -32,11 +49,9 @@ func GetBestMove(board *game.Board, maxDepth int) game.Move {
 }
 
 func minimax(board *game.Board, depth, alpha, beta int, isMaximizingPlayer bool) (evaluation int, bestMove game.Move) {
-	hash := Hash(board)
-	// TODO implement incremental hashing
 
 	// Check the Transposition Table first
-	if found, evaluation, storedMove := lookupHash(hash, depth, alpha, beta); found {
+	if found, evaluation, storedMove := lookupHash(board.Hash, depth, alpha, beta); found {
 		if valid, _ := board.IsValidMove(storedMove); valid {
 			return evaluation, storedMove
 		}
@@ -44,7 +59,7 @@ func minimax(board *game.Board, depth, alpha, beta int, isMaximizingPlayer bool)
 
 	if depth == 0 || board.CheckWin() != game.None {
 		evaluation := Evaluate(board, depth)
-		storeHash(hash, evaluation, depth, Exact)
+		storeHash(board.Hash, evaluation, depth, Exact, game.Move{})
 		return evaluation, game.Move{}
 	}
 
@@ -75,12 +90,11 @@ func minimax(board *game.Board, depth, alpha, beta int, isMaximizingPlayer bool)
 		}
 	}
 
-	// TODO prefer moves that win harder / lose slower
 	if isMaximizingPlayer {
-		storeHash(hash, maxEval, depth, LowerBound)
+		storeHash(board.Hash, maxEval, depth, LowerBound, bestMove)
 		return maxEval, bestMove
 	} else {
-		storeHash(hash, minEval, depth, UpperBound)
+		storeHash(board.Hash, minEval, depth, UpperBound, bestMove)
 		return minEval, bestMove
 	}
 }
@@ -111,4 +125,31 @@ func shuffleMoves(moves []game.Move) []game.Move {
 		shuffledMoves[i] = moves[randIndex]
 	}
 	return shuffledMoves
+}
+
+func lookupHash(hash uint64, depth, alpha, beta int) (found bool, evaluation int, bestMove game.Move) {
+	entry, exists := transpositionTable[hash]
+	if !exists || entry.Depth < depth {
+		return false, NoWin, game.Move{} // Not found or outdated
+	}
+
+	// Use stored value if it helps pruning
+	if entry.Type == Exact {
+		return true, entry.Evaluation, entry.BestMove
+	} else if entry.Type == LowerBound && entry.Evaluation >= beta {
+		return true, entry.Evaluation, entry.BestMove
+	} else if entry.Type == UpperBound && entry.Evaluation <= alpha {
+		return true, entry.Evaluation, entry.BestMove
+	}
+
+	return false, NoWin, game.Move{}
+}
+
+func storeHash(hash uint64, evaluation, depth int, entryType EntryType, bestMove game.Move) {
+	existing, exists := transpositionTable[hash]
+
+	// Only replace if the new depth is greater, or it's a new entry
+	if !exists || depth > existing.Depth {
+		transpositionTable[hash] = TTEntry{Evaluation: evaluation, Depth: depth, Type: entryType, BestMove: bestMove}
+	}
 }
