@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// TODO add tests
-
 func TestNoWin(t *testing.T) {
 	board := game.NewBoard()
 	winner := SolvePosition(board, 5)
