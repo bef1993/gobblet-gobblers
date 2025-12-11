@@ -3,15 +3,14 @@ package ai
 import (
 	"fmt"
 	"math"
-	"math/rand"
-	"time"
+	"sort"
 
 	"gibhub.com/bef1993/gobblet-gobblers/game"
 )
 
 // Minimax is the interface for the minimax algorithm
 type Minimax interface {
-	SolvePosition(board *game.Board, maxDepth int) (winner game.Player)
+	CalculateWinner(board *game.Board, maxDepth int) (winner game.Player)
 	GetBestMove(board *game.Board, maxDepth int) game.Move
 }
 
@@ -29,14 +28,14 @@ func NewMinimax() Minimax {
 	}
 }
 
-func (m *minimax) SolvePosition(board *game.Board, maxDepth int) (winner game.Player) {
+func (m *minimax) CalculateWinner(board *game.Board, maxDepth int) (winner game.Player) {
 	evaluation, _ := m.minimax(board, maxDepth, math.MinInt, math.MaxInt, isMaximizingPlayer(board.ActivePlayer))
-	if evaluation == NoWin {
-		return game.None
-	} else if evaluation >= Player1Win {
+	if evaluation >= Player1Win {
 		return game.Player1
-	} else {
+	} else if evaluation <= Player2Win {
 		return game.Player2
+	} else {
+		return game.None
 	}
 }
 
@@ -64,7 +63,9 @@ func (m *minimax) minimax(board *game.Board, depth, alpha, beta int, isMaximizin
 	maxEval := math.MinInt
 	minEval := math.MaxInt
 
-	for _, possibleMove := range shuffleMoves(board.GetPossibleMoves()) {
+	sortedMoves := m.sortMoves(board, board.GetPossibleMoves(), isMaximizingPlayer)
+
+	for _, possibleMove := range sortedMoves {
 		board.MustMakeMove(possibleMove)
 		eval, _ := m.minimax(board, depth-1, alpha, beta, !isMaximizingPlayer)
 		board.MustUndoMove(possibleMove)
@@ -101,13 +102,18 @@ func isMaximizingPlayer(player game.Player) bool {
 	return player == game.Player1
 }
 
-func shuffleMoves(moves []game.Move) []game.Move {
-	// TODO sort moves by heuristic instead of random shuffle
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	shuffledMoves := make([]game.Move, len(moves))
-	perm := r.Perm(len(moves))
-	for i, randIndex := range perm {
-		shuffledMoves[i] = moves[randIndex]
+func (m *minimax) sortMoves(board *game.Board, moves []game.Move, isMaximizingPlayer bool) []game.Move {
+	moveScores := make(map[game.Move]int)
+	for _, move := range moves {
+		moveScores[move] = m.evaluator.EvaluateMove(board, move)
 	}
-	return shuffledMoves
+
+	sort.Slice(moves, func(i, j int) bool {
+		if isMaximizingPlayer {
+			return moveScores[moves[i]] > moveScores[moves[j]]
+		}
+		return moveScores[moves[i]] < moveScores[moves[j]]
+	})
+
+	return moves
 }

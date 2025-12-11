@@ -8,13 +8,14 @@ func TestZobristHash(t *testing.T) {
 	if hash1 != GetPlayerZobristValue(Player1) {
 		t.Error("hash must equal player 1 hash")
 	}
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
+	move := NewMove(Player1, board.Get(0, 0), Small)
+	board.MustMakeMove(move)
 	hash2 := board.Hash
-	board.MustUndoMove(NewMove(Player1, 0, 0, Small))
+	board.MustUndoMove(move)
 	if board.Hash != hash1 {
 		t.Error("hash must equal after UndoMove")
 	}
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
+	board.MustMakeMove(move)
 	if board.Hash != hash2 {
 		t.Error("hash must equal after redo move")
 	}
@@ -26,16 +27,17 @@ func TestZobristHash(t *testing.T) {
 
 func TestZobristHashMovePiece(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Medium))
-	board.MustMakeMove(NewMove(Player2, 1, 1, Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Medium))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Small))
 	hash1 := board.Hash
-	board.MustMakeMove(NewMoveExisting(0, 0, 1, 1))
+	move := NewMoveExisting(board.Get(0, 0), board.Get(1, 1))
+	board.MustMakeMove(move)
 	hash2 := board.Hash
-	board.MustUndoMove(NewMoveExisting(0, 0, 1, 1))
+	board.MustUndoMove(move)
 	if board.Hash != hash1 {
 		t.Error("hash must equal after UndoMove")
 	}
-	board.MustMakeMove(NewMoveExisting(0, 0, 1, 1))
+	board.MustMakeMove(move)
 	if board.Hash != hash2 {
 		t.Error("hash must equal after redo move")
 	}

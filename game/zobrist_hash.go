@@ -24,7 +24,7 @@ func init() {
 	InitZobrist() // Runs automatically before `main()`
 }
 
-func GetZobristValue(position Position, piece Piece) uint64 {
+func GetZobristValue(position *Position, piece Piece) uint64 {
 	return zobristTable[position.Row][position.Col][piece.ID()]
 }
 
