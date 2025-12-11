@@ -110,9 +110,9 @@ func printBoard(board *game.Board) {
 	for row := 0; row < 3; row++ {
 		fmt.Print(row+1, "| ")
 		for col := 0; col < 3; col++ {
-			topPiece := board.TopPiece(game.Position{Row: row, Col: col})
+			topPiece := board.Get(row, col).TopPiece()
 			if topPiece == nil {
-				fmt.Print(". ")
+				fmt.Print(".  ")
 			} else {
 				fmt.Print(topPiece.String() + " ")
 			}
@@ -141,26 +141,26 @@ func ParseMove(input string, board *game.Board) (game.Move, error) {
 	}
 
 	inputs := strings.Split(input, " ")
-	var from game.Position
-	var to game.Position
+	var from *game.Position
+	var to *game.Position
 	var piece game.Piece
 
 	if moveIsPlacingNewPiece(inputs) {
-		to = parsePosition(inputs[0])
+		to = board.Get(parseCoords(inputs[0]))
 		size := letterToSize(inputs[1][0])
 		piece = game.Piece{Owner: board.ActivePlayer, Size: size}
 	} else {
-		from = parsePosition(inputs[0])
-		to = parsePosition(inputs[1])
+		from = board.Get(parseCoords(inputs[0]))
+		to = board.Get(parseCoords(inputs[1]))
 	}
 
 	return game.Move{Piece: piece, From: from, To: to}, nil
 }
 
-func parsePosition(input string) game.Position {
-	row := int(input[1]) - '0' - 1
-	col := letterToColIndex(input[0])
-	return game.Position{Row: row, Col: col}
+func parseCoords(input string) (row, col int) {
+	row = int(input[1]) - '0' - 1
+	col = letterToColIndex(input[0])
+	return row, col
 }
 
 func letterToColIndex(letter uint8) int {
@@ -227,6 +227,6 @@ func MoveString(move game.Move) string {
 	}
 }
 
-func PositionString(p game.Position) string {
+func PositionString(p *game.Position) string {
 	return fmt.Sprintf("%v%v", colIndexToLetter(p.Col), p.Row+1)
 }

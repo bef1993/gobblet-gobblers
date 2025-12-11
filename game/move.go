@@ -2,32 +2,35 @@ package game
 
 type Move struct {
 	Piece Piece
-	From  Position
-	To    Position
+	From  *Position
+	To    *Position
 }
 
-type Position struct {
-	Row int
-	Col int
-}
-
-func NewMove(player Player, row, col int, size Size) Move {
+func NewMove(player Player, to *Position, size Size) Move {
 	if player == None {
 		panic("player must not be None")
 	}
-	return Move{Piece: Piece{Owner: player, Size: size},
-		From: Position{},
-		To:   Position{Row: row, Col: col}}
+	if to == nil {
+		panic("to must not be nil")
+	}
+
+	return Move{
+		Piece: Piece{Owner: player, Size: size},
+		From:  nil,
+		To:    to,
+	}
 }
 
-func NewMoveExisting(fromRow, fromCol, toRow, toCol int) Move {
-	return Move{Piece: Piece{},
-		From: Position{Row: fromRow, Col: fromCol},
-		To:   Position{Row: toRow, Col: toCol}}
-}
+func NewMoveExisting(from, to *Position) Move {
+	if from == nil || to == nil {
+		panic("from and to must not be nil")
+	}
 
-func (m Move) IsOutOfBounds() bool {
-	return m.From.IsOutOfBounds() || m.To.IsOutOfBounds()
+	return Move{
+		Piece: Piece{},
+		From:  from,
+		To:    to,
+	}
 }
 
 func (m Move) MovesExistingPiece() bool {
@@ -36,15 +39,4 @@ func (m Move) MovesExistingPiece() bool {
 
 func (m Move) PlacesNewPiece() bool {
 	return !m.MovesExistingPiece()
-}
-
-func (p Position) IsWithinBounds() bool {
-	if p.Col < 0 || p.Col > 2 || p.Row < 0 || p.Row > 2 {
-		return false
-	}
-	return true
-}
-
-func (p Position) IsOutOfBounds() bool {
-	return !p.IsWithinBounds()
 }

@@ -6,14 +6,23 @@ import (
 )
 
 type Board struct {
-	Grid            [3][3][]Piece
+	Grid            [3][3]Position
+	Lines           [8]Line
 	RemainingPieces map[Player][]int
 	ActivePlayer    Player
 	Hash            uint64
 }
 
+type Line [3]*Position
+
+type Position struct {
+	Row    int
+	Col    int
+	Pieces []Piece
+}
+
 func NewBoard() *Board {
-	return &Board{
+	board := &Board{
 		RemainingPieces: map[Player][]int{
 			Player1: {2, 2, 2},
 			Player2: {2, 2, 2},
@@ -21,6 +30,16 @@ func NewBoard() *Board {
 		ActivePlayer: Player1,
 		Hash:         GetPlayerZobristValue(Player1),
 	}
+	board.initializePositions()
+	board.initializeLines()
+	return board
+}
+
+func (b *Board) Get(row, col int) *Position {
+	if row < 0 || row >= 3 || col < 0 || col >= 3 {
+		panic("can not get position out of bounds")
+	}
+	return &b.Grid[row][col]
 }
 
 func (b *Board) MustMakeMove(move Move) {
@@ -37,9 +56,9 @@ func (b *Board) MakeMove(move Move) error {
 	}
 
 	if move.MovesExistingPiece() {
-		pieceToMove := *b.TopPiece(move.From)
+		pieceToMove := move.From.TopPiece()
 		b.removePiece(move.From)
-		b.placePiece(move.To, pieceToMove)
+		b.placePiece(move.To, *pieceToMove)
 	} else {
 		b.placePiece(move.To, move.Piece)
 
@@ -50,13 +69,10 @@ func (b *Board) MakeMove(move Move) error {
 }
 
 func (b *Board) MustUndoMove(move Move) {
-	if !b.isValidUndo(move) {
-		panic("undo move invalid")
-	}
 	if move.MovesExistingPiece() {
-		pieceToMove := *b.TopPiece(move.To)
+		pieceToMove := move.To.TopPiece()
 		b.removePiece(move.To)
-		b.placePiece(move.From, pieceToMove)
+		b.placePiece(move.From, *pieceToMove)
 	} else {
 		b.removePiece(move.To)
 	}
@@ -64,55 +80,45 @@ func (b *Board) MustUndoMove(move Move) {
 	b.switchActivePlayer()
 }
 
-func (b *Board) placePiece(p Position, piece Piece) {
+func (b *Board) placePiece(p *Position, piece Piece) {
 	b.Hash ^= GetZobristValue(p, piece)
-	stack := b.getPositionStack(p)
-	b.Grid[p.Row][p.Col] = append(stack, piece)
+	p.Pieces = append(p.Pieces, piece)
 	b.RemainingPieces[piece.Owner][piece.Size]--
 }
 
-func (b *Board) removePiece(p Position) {
-	topPiece := b.TopPiece(p)
+func (b *Board) removePiece(p *Position) {
+	topPiece := p.TopPiece()
 	if topPiece == nil {
 		panic("attempting to remove piece from empty position")
 	}
 	b.Hash ^= GetZobristValue(p, *topPiece)
-	stack := b.getPositionStack(p)
-	b.Grid[p.Row][p.Col] = stack[:len(stack)-1]
+	p.Pieces = p.Pieces[:len(p.Pieces)-1]
 	b.RemainingPieces[topPiece.Owner][topPiece.Size]++
 }
 
-func (b *Board) TopPiece(p Position) *Piece {
-	stack := b.Grid[p.Row][p.Col]
-	if len(stack) == 0 {
+func (p Position) TopPiece() *Piece {
+	if len(p.Pieces) == 0 {
 		return nil // No pieces in this cell
 	}
-	return &stack[len(stack)-1] // Return top piece
+	// Create and return a copy of the top piece
+	topPiece := p.Pieces[len(p.Pieces)-1]
+	return &topPiece
 }
 
 func (b *Board) CheckWin() Player {
-	// Check rows and columns
-	for i := 0; i < 3; i++ {
-		if winner := b.checkLine(b.TopPiece(Position{i, 0}), b.TopPiece(Position{i, 1}), b.TopPiece(Position{i, 2})); winner != None {
-			return winner
-		}
-		if winner := b.checkLine(b.TopPiece(Position{0, i}), b.TopPiece(Position{1, i}), b.TopPiece(Position{2, i})); winner != None {
+	for _, line := range b.Lines {
+		if winner := line.CheckWin(); winner != None {
 			return winner
 		}
 	}
-
-	// Check diagonals
-	if winner := b.checkLine(b.TopPiece(Position{0, 0}), b.TopPiece(Position{1, 1}), b.TopPiece(Position{2, 2})); winner != None {
-		return winner
-	}
-	if winner := b.checkLine(b.TopPiece(Position{0, 2}), b.TopPiece(Position{1, 1}), b.TopPiece(Position{2, 0})); winner != None {
-		return winner
-	}
-
 	return None // No winner yet
 }
 
-func (b *Board) checkLine(p1, p2, p3 *Piece) Player {
+func (l Line) CheckWin() Player {
+	p1 := l[0].TopPiece()
+	p2 := l[1].TopPiece()
+	p3 := l[2].TopPiece()
+
 	if p1 == nil || p2 == nil || p3 == nil {
 		return None // At least one empty cell, no win
 	}
@@ -128,8 +134,8 @@ func (b *Board) GetPossibleMoves() []Move {
 	// Try placing new pieces
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
-			for _, piece := range b.AvailablePieces(b.ActivePlayer) {
-				move := Move{Piece: piece, From: Position{}, To: Position{row, col}}
+			for _, size := range b.AvailablePieceSizes(b.ActivePlayer) {
+				move := NewMove(b.ActivePlayer, b.Get(row, col), size)
 				valid, _ := b.IsValidMove(move)
 				if valid {
 					moves = append(moves, move)
@@ -141,12 +147,11 @@ func (b *Board) GetPossibleMoves() []Move {
 	//Try moving already placed pieces
 	for fromRow := 0; fromRow < 3; fromRow++ {
 		for fromCol := 0; fromCol < 3; fromCol++ {
-			fromPos := Position{Row: fromRow, Col: fromCol}
-			stack := b.getPositionStack(fromPos)
-			topPiece := b.TopPiece(fromPos)
+			fromPos := b.Get(fromRow, fromCol)
+			topPiece := fromPos.TopPiece()
 
 			// Skip empty positions
-			if len(stack) == 0 {
+			if topPiece == nil {
 				continue
 			}
 
@@ -158,14 +163,14 @@ func (b *Board) GetPossibleMoves() []Move {
 			// Try moving to every other position
 			for toRow := 0; toRow < 3; toRow++ {
 				for toCol := 0; toCol < 3; toCol++ {
-					toPos := Position{Row: toRow, Col: toCol}
+					toPos := b.Get(toRow, toCol)
 
 					// Don't move to the same position
 					if fromPos == toPos {
 						continue
 					}
 
-					move := Move{Piece: Piece{}, From: fromPos, To: toPos}
+					move := NewMoveExisting(fromPos, toPos)
 					if valid, _ := b.IsValidMove(move); valid {
 						moves = append(moves, move)
 					}
@@ -179,9 +184,12 @@ func (b *Board) GetPossibleMoves() []Move {
 func (b *Board) IsValidMove(move Move) (bool, error) {
 	from, to, piece := move.From, move.To, move.Piece
 
-	// Check bounds
-	if move.IsOutOfBounds() {
-		return false, errors.New("positions are out of bounds")
+	// Check if positions exist within grid
+	if to == nil || b.Get(to.Row, to.Col) != to {
+		return false, errors.New("TO position not found in grid")
+	}
+	if from != nil && &b.Grid[from.Row][from.Col] != from {
+		return false, errors.New("FROM position not found in grid")
 	}
 
 	// Check winner
@@ -203,13 +211,13 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	if move.MovesExistingPiece() {
 
 		// Check that a piece exists on position
-		pieceOnStack := b.TopPiece(from)
-		if pieceOnStack == nil {
+		pieceToMove := from.TopPiece()
+		if pieceToMove == nil {
 			return false, errors.New(fmt.Sprintf("piece does not exist on position"))
 		}
 
 		// Check that piece from position belongs to active player
-		if pieceOnStack.Owner != b.ActivePlayer {
+		if pieceToMove.Owner != b.ActivePlayer {
 			return false, errors.New(fmt.Sprintf("piece does not belong to active player"))
 		}
 
@@ -219,71 +227,83 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 		}
 
 		// Check that moving the piece would not cause the other player to win
-		originalStack := b.getPositionStack(from)
+		originalStack := from.Pieces
 		// Temporarily remove the top piece
-		b.Grid[from.Row][from.Col] = originalStack[:len(originalStack)-1]
+		from.Pieces = originalStack[:len(originalStack)-1]
 		// Check if the opponent wins
 		winner := b.CheckWin()
 		// Restore board state
-		b.Grid[from.Row][from.Col] = originalStack
+		from.Pieces = originalStack
 		// If opponent wins, this move is invalid
 		if winner != None {
 			return false, errors.New("moving piece would cause the other player to win")
 		}
 	}
 
-	stack := b.Grid[to.Row][to.Col]
-
 	// If empty, any piece can be placed
-	if len(stack) == 0 {
+	if len(to.Pieces) == 0 {
 		return true, nil
 	}
 
-	// Get the top piece in the stack
-	pieceOnTargetPosition := stack[len(stack)-1]
-
 	// Use pieceToMove if necessary
 	if piece == (Piece{}) {
-		piece = *b.TopPiece(from)
+		piece = *from.TopPiece()
 	}
 
 	// Ensure the piece is larger than the already placed piece
-	if piece.Size <= pieceOnTargetPosition.Size {
+	if piece.Size <= to.TopPiece().Size {
 		return false, errors.New("piece not larger than existing piece on position")
 	}
 
 	return true, nil
 }
 
-func (b *Board) AvailablePieces(player Player) (pieces []Piece) {
+func (b *Board) AvailablePieceSizes(player Player) (sizes []Size) {
 	if b.RemainingPieces[player][Small] > 0 {
-		pieces = append(pieces, Piece{Owner: player, Size: Small})
+		sizes = append(sizes, Small)
 	}
 	if b.RemainingPieces[player][Medium] > 0 {
-		pieces = append(pieces, Piece{Owner: player, Size: Medium})
+		sizes = append(sizes, Medium)
 	}
 	if b.RemainingPieces[player][Large] > 0 {
-		pieces = append(pieces, Piece{Owner: player, Size: Large})
+		sizes = append(sizes, Large)
 	}
 
-	return pieces
+	return sizes
 }
 
 func (b *Board) hasPieceAvailable(piece Piece) bool {
 	return b.RemainingPieces[piece.Owner][piece.Size] >= 1
 }
 
-func (b *Board) getPositionStack(p Position) []Piece {
-	return b.Grid[p.Row][p.Col]
-}
-
-func (b *Board) isValidUndo(move Move) bool {
-	// TODO implement
-	return true
-}
-
 func (b *Board) switchActivePlayer() {
 	b.Hash ^= GetPlayerZobristValue(b.ActivePlayer)
 	b.ActivePlayer = b.ActivePlayer.Opponent()
 	b.Hash ^= GetPlayerZobristValue(b.ActivePlayer)
+}
+
+func (b *Board) initializePositions() {
+	for r := 0; r < 3; r++ {
+		for c := 0; c < 3; c++ {
+			b.Grid[r][c] = Position{Row: r, Col: c, Pieces: []Piece{}}
+		}
+	}
+}
+
+func (b *Board) initializeLines() {
+	// Rows
+	for r := 0; r < 3; r++ {
+		b.Lines[r] = Line{&b.Grid[r][0], &b.Grid[r][1], &b.Grid[r][2]}
+	}
+
+	// Columns
+	for c := 0; c < 3; c++ {
+		b.Lines[c+3] = Line{
+			&b.Grid[0][c], &b.Grid[1][c], &b.Grid[2][c],
+		}
+	}
+
+	// Diagonals
+	b.Lines[6] = Line{&b.Grid[0][0], &b.Grid[1][1], &b.Grid[2][2]}
+	b.Lines[7] = Line{&b.Grid[0][2], &b.Grid[1][1], &b.Grid[2][0]}
 }

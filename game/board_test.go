@@ -8,13 +8,13 @@ import (
 
 func TestPlayer1Win(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	board.MustMakeMove(NewMove(Player2, 0, 0, Medium))
-	board.MustMakeMove(NewMove(Player1, 0, 0, Large))
-	board.MustMakeMove(NewMove(Player2, 1, 0, Small))
-	board.MustMakeMove(NewMove(Player1, 1, 0, Medium))
-	board.MustMakeMove(NewMove(Player2, 2, 2, Small))
-	board.MustMakeMove(NewMove(Player1, 2, 0, Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(0, 0), Medium))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Large))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 0), Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(1, 0), Medium))
+	board.MustMakeMove(NewMove(Player2, board.Get(2, 2), Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(2, 0), Small))
 
 	if board.CheckWin() != Player1 {
 		t.Errorf("Game must be won by player 1")
@@ -27,12 +27,12 @@ func TestPlayer1Win(t *testing.T) {
 
 func TestPlayer2Win(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	board.MustMakeMove(NewMove(Player2, 0, 0, Medium))
-	board.MustMakeMove(NewMove(Player1, 1, 1, Small))
-	board.MustMakeMove(NewMove(Player2, 1, 1, Medium))
-	board.MustMakeMove(NewMove(Player1, 2, 2, Medium))
-	board.MustMakeMove(NewMove(Player2, 2, 2, Large))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(0, 0), Medium))
+	board.MustMakeMove(NewMove(Player1, board.Get(1, 1), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Medium))
+	board.MustMakeMove(NewMove(Player1, board.Get(2, 2), Medium))
+	board.MustMakeMove(NewMove(Player2, board.Get(2, 2), Large))
 
 	if board.CheckWin() != Player2 {
 		t.Errorf("Game must be won by player 2")
@@ -41,32 +41,19 @@ func TestPlayer2Win(t *testing.T) {
 
 func TestNoWin(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	board.MustMakeMove(NewMove(Player2, 1, 1, Small))
-	board.MustMakeMove(NewMove(Player1, 1, 1, Medium))
-	board.MustMakeMove(NewMove(Player2, 1, 1, Large))
-	board.MustMakeMove(NewMove(Player1, 2, 2, Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(1, 1), Medium))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Large))
+	board.MustMakeMove(NewMove(Player1, board.Get(2, 2), Small))
 	if board.CheckWin() != None {
 		t.Errorf("Game must not be won yet")
 	}
 }
 
-func TestOutOfBoundsMove(t *testing.T) {
+func TestPlaceOpponentPiece(t *testing.T) {
 	board := NewBoard()
-	err := board.MakeMove(NewMove(Player1, 3, 0, Small))
-	if err == nil {
-		t.Errorf("Move should be out of bounds")
-	}
-
-	err = board.MakeMove(NewMoveExisting(0, 3, 0, 0))
-	if err == nil {
-		t.Errorf("Move should be out of bounds")
-	}
-}
-
-func TestMoveOpponentPiece(t *testing.T) {
-	board := NewBoard()
-	err := board.MakeMove(NewMove(Player2, 0, 0, Small))
+	err := board.MakeMove(NewMove(Player2, board.Get(0, 0), Small))
 	if err == nil {
 		t.Errorf("placing piece of opponent must be illegal")
 	}
@@ -74,14 +61,14 @@ func TestMoveOpponentPiece(t *testing.T) {
 
 func TestPieceNotLarger(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	err := board.MakeMove(NewMove(Player2, 0, 0, Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+	err := board.MakeMove(NewMove(Player2, board.Get(0, 0), Small))
 	if err == nil {
 		t.Errorf("Expected move to be illegal")
 	}
 
-	board.MustMakeMove(NewMove(Player2, 0, 0, Medium))
-	err = board.MakeMove(NewMove(Player1, 0, 0, Medium))
+	board.MustMakeMove(NewMove(Player2, board.Get(0, 0), Medium))
+	err = board.MakeMove(NewMove(Player1, board.Get(0, 0), Medium))
 	if err == nil {
 		t.Errorf("Expected move to be illegal")
 	}
@@ -89,11 +76,11 @@ func TestPieceNotLarger(t *testing.T) {
 
 func TestPieceNotAvailable(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	board.MustMakeMove(NewMove(Player2, 0, 0, Medium))
-	board.MustMakeMove(NewMove(Player1, 1, 1, Small))
-	board.MustMakeMove(NewMove(Player2, 1, 1, Medium))
-	err := board.MakeMove(NewMove(Player1, 2, 2, Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(0, 0), Medium))
+	board.MustMakeMove(NewMove(Player1, board.Get(1, 1), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Medium))
+	err := board.MakeMove(NewMove(Player1, board.Get(2, 2), Small))
 	if err == nil {
 		t.Errorf("Expected move to be illegal")
 	}
@@ -101,20 +88,20 @@ func TestPieceNotAvailable(t *testing.T) {
 
 func TestMovingPiece(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Large))
-	board.MustMakeMove(NewMove(Player2, 1, 1, Medium))
-	board.MustMakeMove(NewMoveExisting(0, 0, 1, 1))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Large))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Medium))
+	board.MustMakeMove(NewMoveExisting(board.Get(0, 0), board.Get(1, 1)))
 }
 
 func TestMovingNonExistingPiece(t *testing.T) {
 	board := NewBoard()
-	err := board.MakeMove(NewMoveExisting(0, 0, 1, 1))
+	err := board.MakeMove(NewMoveExisting(board.Get(0, 0), board.Get(1, 1)))
 	if err == nil {
 		t.Errorf("Moving non-existing piece must be illegal")
 	}
 
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	err = board.MakeMove(NewMoveExisting(0, 0, 1, 1))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+	err = board.MakeMove(NewMoveExisting(board.Get(0, 0), board.Get(1, 1)))
 	if err == nil {
 		t.Errorf("Moving non-existing piece must be illegal")
 	}
@@ -122,9 +109,9 @@ func TestMovingNonExistingPiece(t *testing.T) {
 
 func TestMovingPieceToSameLocation(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	board.MustMakeMove(NewMove(Player2, 1, 1, Small))
-	err := board.MakeMove(NewMoveExisting(0, 0, 0, 0))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Small))
+	err := board.MakeMove(NewMoveExisting(board.Get(0, 0), board.Get(0, 0)))
 	if err == nil {
 		t.Errorf("Moving piece to same location must be illegal")
 	}
@@ -132,9 +119,9 @@ func TestMovingPieceToSameLocation(t *testing.T) {
 
 func TestMovingPieceOfOtherPlayer(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
 
-	err := board.MakeMove(NewMoveExisting(0, 0, 1, 1))
+	err := board.MakeMove(NewMoveExisting(board.Get(0, 0), board.Get(1, 1)))
 	if err == nil {
 		t.Errorf("Moving piece of other player must be illegal")
 	}
@@ -142,12 +129,12 @@ func TestMovingPieceOfOtherPlayer(t *testing.T) {
 
 func TestMovingPieceWouldCauseOtherPlayerToWin(t *testing.T) {
 	board := NewBoard()
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
-	board.MustMakeMove(NewMove(Player2, 0, 0, Medium))
-	board.MustMakeMove(NewMove(Player1, 1, 1, Small))
-	board.MustMakeMove(NewMove(Player2, 2, 2, Small))
-	board.MustMakeMove(NewMove(Player1, 2, 2, Medium))
-	err := board.MakeMove(NewMoveExisting(0, 0, 0, 2))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(0, 0), Medium))
+	board.MustMakeMove(NewMove(Player1, board.Get(1, 1), Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(2, 2), Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(2, 2), Medium))
+	err := board.MakeMove(NewMoveExisting(board.Get(0, 0), board.Get(0, 2)))
 	if err == nil {
 		t.Errorf("Moving piece that would cause the other player to win is illegal")
 	}
@@ -158,12 +145,18 @@ func TestGetPossibleMoves(t *testing.T) {
 	if len(board.GetPossibleMoves()) != 9*3 {
 		t.Errorf("GetPossibleMoves should have 9*3 possible moves")
 	}
-	board.MustMakeMove(NewMove(Player1, 0, 0, Small))
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
 	if len(board.GetPossibleMoves()) != (9*3)-1 {
 		t.Errorf("GetPossibleMoves should have (9*3)-1 possible moves")
 	}
-	board.MustMakeMove(NewMove(Player2, 1, 1, Small))
+	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Small))
 	if len(board.GetPossibleMoves()) != (9*3)-2+7 {
 		t.Errorf("GetPossibleMoves should have (9*3)-2+7 possible moves")
 	}
+}
+
+func TestUndoMove(t *testing.T) {
+	board := NewBoard()
+	board.MustMakeMove(NewMove(Player1, board.Get(0, 0), Small))
+
 }

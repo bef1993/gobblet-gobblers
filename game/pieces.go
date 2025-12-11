@@ -1,8 +1,9 @@
 package game
 
 import (
-	"github.com/fatih/color"
 	"strconv"
+
+	"github.com/fatih/color"
 )
 
 type Size int
