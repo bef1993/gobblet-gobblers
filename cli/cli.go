@@ -3,17 +3,19 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"gibhub.com/bef1993/gobblet-gobblers/ai"
-	"gibhub.com/bef1993/gobblet-gobblers/game"
 	"regexp"
 	"strings"
 	"unicode"
+
+	"gibhub.com/bef1993/gobblet-gobblers/ai"
+	"gibhub.com/bef1993/gobblet-gobblers/game"
 )
 
 const RegexMovePattern = "^[abcABC][1-3] ([sS]|[mM]|[lL]|[abcABC][1-3])$"
 
 func PlayGame(human game.Player) {
 	board := game.NewBoard()
+	minimax := ai.NewMinimax()
 	var winner game.Player
 
 	printBoard(board)
@@ -26,7 +28,7 @@ func PlayGame(human game.Player) {
 			makeHumanMove(board)
 		} else {
 			fmt.Println("Waiting for AI to make move ...")
-			makeAIMove(board)
+			makeAIMove(board, minimax)
 		}
 		printBoard(board)
 
@@ -77,8 +79,8 @@ func getHumanMove(board *game.Board) (move game.Move) {
 
 }
 
-func makeAIMove(board *game.Board) {
-	move := ai.GetBestMove(board, 8)
+func makeAIMove(board *game.Board, minimax ai.Minimax) {
+	move := minimax.GetBestMove(board, 8)
 	fmt.Printf("AI Move: %v\n", MoveString(move))
 	board.MustMakeMove(move)
 }
