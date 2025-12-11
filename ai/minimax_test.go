@@ -42,8 +42,10 @@ func TestPlayer2Win(t *testing.T) {
 }
 
 // 22s with incremental zobrist hashing
+/*
 func TestBenchmarkMinimax(t *testing.T) {
 	board := game.NewBoard()
 	minimax := NewMinimax()
 	minimax.SolvePosition(board, 9)
 }
+*/

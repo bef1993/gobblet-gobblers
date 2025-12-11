@@ -9,27 +9,6 @@ import (
 	"gibhub.com/bef1993/gobblet-gobblers/game"
 )
 
-const (
-	Player1Win int = 1000
-	Player2Win int = -1000
-	NoWin      int = 0
-)
-
-type EntryType int
-
-const (
-	Exact EntryType = iota
-	LowerBound
-	UpperBound
-)
-
-type TTEntry struct {
-	Evaluation int
-	Depth      int
-	BestMove   game.Move
-	Type       EntryType
-}
-
 // Minimax is the interface for the minimax algorithm
 type Minimax interface {
 	SolvePosition(board *game.Board, maxDepth int) (winner game.Player)
@@ -38,13 +17,15 @@ type Minimax interface {
 
 // minimax struct holds the state for the minimax algorithm
 type minimax struct {
-	transpositionTable map[uint64]TTEntry
+	ttable    TranspositionTable
+	evaluator Evaluator
 }
 
 // NewMinimax creates a new Minimax instance
 func NewMinimax() Minimax {
 	return &minimax{
-		transpositionTable: make(map[uint64]TTEntry),
+		ttable:    NewTranspositionTable(),
+		evaluator: NewEvaluator(),
 	}
 }
 
@@ -68,15 +49,15 @@ func (m *minimax) GetBestMove(board *game.Board, maxDepth int) game.Move {
 func (m *minimax) minimax(board *game.Board, depth, alpha, beta int, isMaximizingPlayer bool) (evaluation int, bestMove game.Move) {
 
 	// Check the Transposition Table first
-	if found, evaluation, storedMove := m.lookupHash(board.Hash, depth, alpha, beta); found {
+	if found, evaluation, storedMove := m.ttable.LookupHash(board.Hash, depth, alpha, beta); found {
 		if valid, _ := board.IsValidMove(storedMove); valid {
 			return evaluation, storedMove
 		}
 	}
 
 	if depth == 0 || board.CheckWin() != game.None {
-		evaluation := Evaluate(board, depth)
-		m.storeHash(board.Hash, evaluation, depth, Exact, game.Move{})
+		evaluation := m.evaluator.Evaluate(board, depth)
+		m.ttable.StoreHash(board.Hash, evaluation, depth, ExactBound, game.Move{})
 		return evaluation, game.Move{}
 	}
 
@@ -108,24 +89,11 @@ func (m *minimax) minimax(board *game.Board, depth, alpha, beta int, isMaximizin
 	}
 
 	if isMaximizingPlayer {
-		m.storeHash(board.Hash, maxEval, depth, LowerBound, bestMove)
+		m.ttable.StoreHash(board.Hash, maxEval, depth, LowerBound, bestMove)
 		return maxEval, bestMove
 	} else {
-		m.storeHash(board.Hash, minEval, depth, UpperBound, bestMove)
+		m.ttable.StoreHash(board.Hash, minEval, depth, UpperBound, bestMove)
 		return minEval, bestMove
-	}
-}
-
-func Evaluate(b *game.Board, depthRemaining int) int {
-	switch b.CheckWin() {
-	case game.Player1:
-		return Player1Win + depthRemaining // prefer faster wins
-	case game.Player2:
-		return Player2Win - depthRemaining // prefer delaying losses
-	case game.None:
-		return NoWin
-	default:
-		panic("game state could not be evaluated")
 	}
 }
 
@@ -142,31 +110,4 @@ func shuffleMoves(moves []game.Move) []game.Move {
 		shuffledMoves[i] = moves[randIndex]
 	}
 	return shuffledMoves
-}
-
-func (m *minimax) lookupHash(hash uint64, depth, alpha, beta int) (found bool, evaluation int, bestMove game.Move) {
-	entry, exists := m.transpositionTable[hash]
-	if !exists || entry.Depth < depth {
-		return false, NoWin, game.Move{} // Not found or outdated
-	}
-
-	// Use stored value if it helps pruning
-	if entry.Type == Exact {
-		return true, entry.Evaluation, entry.BestMove
-	} else if entry.Type == LowerBound && entry.Evaluation >= beta {
-		return true, entry.Evaluation, entry.BestMove
-	} else if entry.Type == UpperBound && entry.Evaluation <= alpha {
-		return true, entry.Evaluation, entry.BestMove
-	}
-
-	return false, NoWin, game.Move{}
-}
-
-func (m *minimax) storeHash(hash uint64, evaluation, depth int, entryType EntryType, bestMove game.Move) {
-	existing, exists := m.transpositionTable[hash]
-
-	// Only replace if the new depth is greater, or it's a new entry
-	if !exists || depth > existing.Depth {
-		m.transpositionTable[hash] = TTEntry{Evaluation: evaluation, Depth: depth, Type: entryType, BestMove: bestMove}
-	}
 }
