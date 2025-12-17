@@ -1,13 +1,17 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"gibhub.com/bef1993/gobblet-gobblers/cli"
 	"log"
+
+	"gibhub.com/bef1993/gobblet-gobblers/cli"
 )
 
 func main() {
-	// TODO set MaxDepth via arguments
+	maxDepth := flag.Int("maxDepth", 8, "the maximum search depth for the AI")
+	flag.Parse()
+
 	fmt.Println("Welcome to Gobblet Gobblers")
 	fmt.Println("Do you want to play as Player 1 or Player 2?")
 	player, err := cli.DetermineHumanPlayer()
@@ -16,5 +20,5 @@ func main() {
 		return
 	}
 
-	cli.PlayGame(player)
+	cli.PlayGame(player, *maxDepth)
 }

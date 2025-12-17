@@ -4,15 +4,14 @@ import (
 	"testing"
 
 	"gibhub.com/bef1993/gobblet-gobblers/game"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNoWin(t *testing.T) {
 	board := game.NewBoard()
 	minimax := NewMinimax()
 	winner := minimax.CalculateWinner(board, 5)
-	if winner != game.None {
-		t.Errorf("game is not winnable with maxDepth 5")
-	}
+	assert.Equal(t, game.None, winner, "game must not be solved with maxDepth 5")
 }
 
 func TestPlayer1Win(t *testing.T) {
@@ -22,9 +21,8 @@ func TestPlayer1Win(t *testing.T) {
 	board.MustMakeMove(game.NewMove(game.Player1, board.Get(1, 1), game.Large))
 	minimax := NewMinimax()
 	winner := minimax.CalculateWinner(board, 8)
-	if winner != game.Player1 {
-		t.Errorf("game is winnable with maxDepth 8")
-	}
+
+	assert.Equal(t, game.Player1, winner, "game must be solved with maxDepth 8 and previous moves")
 }
 
 func TestPlayer2Win(t *testing.T) {
@@ -36,16 +34,14 @@ func TestPlayer2Win(t *testing.T) {
 	board.MustMakeMove(game.NewMove(game.Player1, board.Get(1, 0), game.Large))
 	minimax := NewMinimax()
 	winner := minimax.CalculateWinner(board, 1)
-	if winner != game.Player2 {
-		t.Errorf("winner must be Player 1")
-	}
+
+	assert.Equal(t, game.Player2, winner, "winner must be Player 1")
 }
 
-// 22s with incremental zobrist hashing
-/*
-func TestBenchmarkMinimax(t *testing.T) {
+func TestFullSolveGame(t *testing.T) {
 	board := game.NewBoard()
 	minimax := NewMinimax()
-	minimax.SolvePosition(board, 9)
+	winner := minimax.CalculateWinner(board, 9)
+
+	assert.Equal(t, game.Player1, winner, "winner must be Player 1")
 }
-*/
