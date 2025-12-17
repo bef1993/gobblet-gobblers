@@ -54,10 +54,16 @@ func (m *minimax) minimax(board *game.Board, depth, alpha, beta int, isMaximizin
 		}
 	}
 
-	if depth == 0 || board.CheckWin() != game.None {
+	if board.CheckWin() != game.None {
 		evaluation := m.evaluator.Evaluate(board, depth)
 		m.ttable.StoreHash(board.Hash, evaluation, depth, ExactBound, game.Move{})
 		return evaluation, game.Move{}
+	}
+
+	if depth == 0 {
+		evaluation := m.evaluator.Evaluate(board, depth)
+		m.ttable.StoreHash(board.Hash, evaluation, depth, ExactBound, game.Move{})
+		return evaluation, m.sortMoves(board, board.GetPossibleMoves(), isMaximizingPlayer)[0]
 	}
 
 	maxEval := math.MinInt
