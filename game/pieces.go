@@ -1,8 +1,6 @@
 package game
 
 import (
-	"strconv"
-
 	"github.com/fatih/color"
 )
 
@@ -36,11 +34,10 @@ func (piece Piece) String() string {
 	case Large:
 		size = "L"
 	}
-	str := strconv.Itoa(int(piece.Owner)) + size
 	if piece.Owner == Player1 {
-		return color.RedString(str)
+		return color.RedString(size)
 	} else {
-		return color.GreenString(str)
+		return color.GreenString(size)
 	}
 }
 
@@ -52,8 +49,21 @@ func (piece Piece) ID() int {
 	}
 }
 
-func (p Player) Opponent() Player {
-	switch p {
+func (player Player) String() string {
+	switch player {
+	case None:
+		return "None"
+	case Player1:
+		return "Player 1"
+	case Player2:
+		return "Player 2"
+	default:
+		return "Unknown"
+	}
+}
+
+func (player Player) Opponent() Player {
+	switch player {
 	case Player1:
 		return Player2
 	case Player2:

@@ -13,7 +13,7 @@ import (
 
 const RegexMovePattern = "^[abcABC][1-3] ([sS]|[mM]|[lL]|[abcABC][1-3])$"
 
-func PlayGame(human game.Player) {
+func PlayGame(human game.Player, maxDepth int) {
 	board := game.NewBoard()
 	minimax := ai.NewMinimax()
 	var winner game.Player
@@ -28,7 +28,7 @@ func PlayGame(human game.Player) {
 			makeHumanMove(board)
 		} else {
 			fmt.Println("Waiting for AI to make move ...")
-			makeAIMove(board, minimax)
+			makeAIMove(board, minimax, maxDepth)
 		}
 		printBoard(board)
 
@@ -79,8 +79,8 @@ func getHumanMove(board *game.Board) (move game.Move) {
 
 }
 
-func makeAIMove(board *game.Board, minimax ai.Minimax) {
-	move := minimax.GetBestMove(board, 8)
+func makeAIMove(board *game.Board, minimax ai.Minimax, maxDepth int) {
+	move := minimax.GetBestMove(board, maxDepth)
 	fmt.Printf("AI Move: %v\n", MoveString(move))
 	board.MustMakeMove(move)
 }
@@ -106,16 +106,16 @@ func DetermineHumanPlayer() (game.Player, error) {
 func printBoard(board *game.Board) {
 	fmt.Println("  a   b   c ")
 	fmt.Println(" ───────────")
-	// TODO fix misalignment of columns
 	for row := 0; row < 3; row++ {
 		fmt.Print(row+1, "| ")
 		for col := 0; col < 3; col++ {
 			topPiece := board.Get(row, col).TopPiece()
 			if topPiece == nil {
-				fmt.Print(".  ")
+				fmt.Print(".")
 			} else {
-				fmt.Print(topPiece.String() + " ")
+				fmt.Print(topPiece.String())
 			}
+			fmt.Print(" ")
 		}
 		fmt.Println()
 	}

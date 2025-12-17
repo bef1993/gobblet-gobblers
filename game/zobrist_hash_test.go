@@ -1,28 +1,26 @@
 package game
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestZobristHash(t *testing.T) {
 	board := NewBoard()
 	hash1 := board.Hash
-	if hash1 != GetPlayerZobristValue(Player1) {
-		t.Error("hash must equal player 1 hash")
-	}
+	assert.Equal(t, GetPlayerZobristValue(Player1), hash1, "hash must be equal to player 1 hash")
+
 	move := NewMove(Player1, board.Get(0, 0), Small)
 	board.MustMakeMove(move)
 	hash2 := board.Hash
 	board.MustUndoMove(move)
-	if board.Hash != hash1 {
-		t.Error("hash must equal after UndoMove")
-	}
-	board.MustMakeMove(move)
-	if board.Hash != hash2 {
-		t.Error("hash must equal after redo move")
-	}
+	assert.Equal(t, hash1, board.Hash, "hash must be equal after UndoMove")
 
-	if hash1 == hash2 {
-		t.Error("hash must be different for different game states")
-	}
+	board.MustMakeMove(move)
+	assert.Equal(t, hash2, board.Hash, "hash must be equal after redo move")
+
+	assert.NotEqual(t, hash1, hash2, "hash must be different for different game states")
 }
 
 func TestZobristHashMovePiece(t *testing.T) {
@@ -34,15 +32,10 @@ func TestZobristHashMovePiece(t *testing.T) {
 	board.MustMakeMove(move)
 	hash2 := board.Hash
 	board.MustUndoMove(move)
-	if board.Hash != hash1 {
-		t.Error("hash must equal after UndoMove")
-	}
-	board.MustMakeMove(move)
-	if board.Hash != hash2 {
-		t.Error("hash must equal after redo move")
-	}
+	assert.Equal(t, hash1, board.Hash, "hash must be equal after UndoMove")
 
-	if hash1 == hash2 {
-		t.Error("hash must be different for different game states")
-	}
+	board.MustMakeMove(move)
+	assert.Equal(t, hash2, board.Hash, "hash must be equal after redo move")
+
+	assert.NotEqual(t, hash1, hash2, "hash must be different for different game states")
 }
