@@ -31,4 +31,5 @@ This implementation includes an **AI opponent** powered by the **Minimax algorit
 
 - **Minimax Algorithm**: The AI evaluates all possible moves to find the optimal play by simulating future game states.
 - **Alpha-Beta Pruning**: Optimizes Minimax by eliminating unnecessary branches, making the AI more efficient.
+- **Heuristic Move Sorting**: Instead of exploring moves in a random order, the AI first evaluates each possible move with a heuristic function and sorts them. By searching the most promising moves first, the algorithm is much more likely to trigger alpha-beta pruning, leading to a significant performance increase.
 - **Incremental Zobrist Hashing**: Used for board state hashing to speed up repeated state evaluations.
