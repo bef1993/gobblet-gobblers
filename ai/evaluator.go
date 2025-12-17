@@ -41,8 +41,14 @@ func (e *evaluator) EvaluateMove(b *game.Board, move game.Move) int {
 }
 
 func (e *evaluator) calculateHeuristicScore(b *game.Board) int {
-	score := 0
+	if b.CheckWin() == game.Player1 {
+		return Player1Win
+	}
+	if b.CheckWin() == game.Player2 {
+		return Player2Win
+	}
 
+	score := 0
 	for _, line := range b.Lines {
 		score += evaluateLine(line)
 	}
