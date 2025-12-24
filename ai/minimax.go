@@ -60,16 +60,24 @@ func (m *minimax) minimax(board *game.Board, depth, alpha, beta int, isMaximizin
 		return evaluation, game.Move{}
 	}
 
+	possibleMoves := board.GetPossibleMoves()
+
+	//No moves possible - Draw
+	if len(possibleMoves) == 0 {
+		m.ttable.StoreHash(board.Hash, NoWin, depth, ExactBound, game.Move{})
+		return NoWin, game.Move{}
+	}
+
 	if depth == 0 {
 		evaluation := m.evaluator.Evaluate(board, depth)
 		m.ttable.StoreHash(board.Hash, evaluation, depth, ExactBound, game.Move{})
-		return evaluation, m.sortMoves(board, board.GetPossibleMoves(), isMaximizingPlayer)[0]
+		return evaluation, m.sortMoves(board, possibleMoves, isMaximizingPlayer)[0]
 	}
 
 	maxEval := math.MinInt
 	minEval := math.MaxInt
 
-	sortedMoves := m.sortMoves(board, board.GetPossibleMoves(), isMaximizingPlayer)
+	sortedMoves := m.sortMoves(board, possibleMoves, isMaximizingPlayer)
 
 	for _, possibleMove := range sortedMoves {
 		board.MustMakeMove(possibleMove)
