@@ -42,7 +42,8 @@ Moves are represented by the `Move` struct.
 1.  **Placement**: Players can place a new piece on an empty square or gobble a smaller piece.
 2.  **Movement**: Players can move their own exposed pieces to another square (empty or occupied by a smaller piece).
 3.  **Winning**: Align 3 pieces of your color in a row, column, or diagonal.
-4.  **Special Rule**: You cannot move a piece if it uncovers an opponent's piece that completes a line for them (this is checked in `IsValidMove`).
+4.  **Illegal Moves**: You cannot move a piece if it uncovers an opponent's piece that completes a line for them (this is checked in `IsValidMove`).
+5.  **No Legal Moves**: If a player has no legal moves available (e.g., all possible moves would uncover an opponent's winning line), that player loses immediately.
 
 ## AI Implementation (`ai/`)
 

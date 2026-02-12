@@ -62,10 +62,8 @@ func (m *minimax) minimax(board *game.Board, depth, alpha, beta int, isMaximizin
 
 	possibleMoves := board.GetPossibleMoves()
 
-	//No moves possible - Draw
 	if len(possibleMoves) == 0 {
-		m.ttable.StoreHash(board.Hash, NoWin, depth, ExactBound, game.Move{})
-		return NoWin, game.Move{}
+		panic("when no moves are possible the game must be lost for the current player")
 	}
 
 	if depth == 0 {

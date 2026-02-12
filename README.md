@@ -48,7 +48,8 @@ a1 c3
 ```
 
 ## Special Rules
-A move that would cause the other player to have three of his pieces aligned (by uncovering one of their pieces) is considered illegal.
+- **Illegal Moves**: A move that would cause the other player to have three of his pieces aligned (by uncovering one of their pieces) is considered illegal.
+- **No Legal Moves**: If a player has no legal moves available (e.g., all possible moves would uncover an opponent's winning line), that player loses immediately.
 
 ## AI & Minimax Algorithm
 

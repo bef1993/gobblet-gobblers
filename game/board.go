@@ -106,12 +106,27 @@ func (p Position) TopPiece() *Piece {
 }
 
 func (b *Board) CheckWin() Player {
+	// 1. Check for standard 3-in-a-row win
+	if winner := b.CheckLineWin(); winner != None {
+		return winner
+	}
+
+	// 2. Check if the active player has no legal moves
+	// If the active player cannot make any move, they lose (so the opponent wins).
+	if !b.HasAnyLegalMove() {
+		return b.ActivePlayer.Opponent()
+	}
+
+	return None // No winner yet
+}
+
+func (b *Board) CheckLineWin() Player {
 	for _, line := range b.Lines {
 		if winner := line.CheckWin(); winner != None {
 			return winner
 		}
 	}
-	return None // No winner yet
+	return None
 }
 
 func (l Line) CheckWin() Player {
@@ -128,9 +143,27 @@ func (l Line) CheckWin() Player {
 	return None
 }
 
+func (b *Board) HasAnyLegalMove() bool {
+	found := false
+	b.IteratePossibleMoves(func(move Move) bool {
+		found = true
+		return false // Stop iteration
+	})
+	return found
+}
+
 func (b *Board) GetPossibleMoves() []Move {
 	var moves []Move
+	b.IteratePossibleMoves(func(move Move) bool {
+		moves = append(moves, move)
+		return true // Continue iteration
+	})
+	return moves
+}
 
+// IteratePossibleMoves iterates over all possible moves and calls the callback function for each valid move.
+// If the callback returns false, the iteration stops.
+func (b *Board) IteratePossibleMoves(callback func(move Move) bool) {
 	// Try placing new pieces
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
@@ -138,7 +171,9 @@ func (b *Board) GetPossibleMoves() []Move {
 				move := NewMove(b.ActivePlayer, b.Get(row, col), size)
 				valid, _ := b.IsValidMove(move)
 				if valid {
-					moves = append(moves, move)
+					if !callback(move) {
+						return
+					}
 				}
 			}
 		}
@@ -172,13 +207,14 @@ func (b *Board) GetPossibleMoves() []Move {
 
 					move := NewMoveExisting(fromPos, toPos)
 					if valid, _ := b.IsValidMove(move); valid {
-						moves = append(moves, move)
+						if !callback(move) {
+							return
+						}
 					}
 				}
 			}
 		}
 	}
-	return moves
 }
 
 func (b *Board) IsValidMove(move Move) (bool, error) {
@@ -193,7 +229,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	}
 
 	// Check winner
-	if b.CheckWin() != None {
+	if b.CheckLineWin() != None {
 		return false, errors.New(fmt.Sprintf("game is already won"))
 	}
 
@@ -230,8 +266,10 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 		originalStack := from.Pieces
 		// Temporarily remove the top piece
 		from.Pieces = originalStack[:len(originalStack)-1]
+
 		// Check if the opponent wins
-		winner := b.CheckWin()
+		winner := b.CheckLineWin()
+
 		// Restore board state
 		from.Pieces = originalStack
 		// If opponent wins, this move is invalid

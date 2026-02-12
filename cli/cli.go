@@ -38,11 +38,9 @@ func PlayGame(human game.Player, maxDepth int) {
 		}
 	}
 
-	fmt.Printf("Winner: Player %v\n", winner)
-	// Wait for a single key press before exiting
+	fmt.Println("Winner:", winner)
 
-	// Consume any leftover input (to prevent immediate exit)
-	_, _ = fmt.Scanln()
+	// Wait for a single key press before exiting
 	_, _ = fmt.Scanln()
 }
 
