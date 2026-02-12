@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	maxDepth := flag.Int("maxDepth", 8, "the maximum search depth for the AI")
+	maxDepth := flag.Int("maxDepth", 9, "the maximum search depth for the AI")
 	flag.Parse()
 
 	fmt.Println("Welcome to Gobblet Gobblers")

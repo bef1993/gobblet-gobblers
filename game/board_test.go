@@ -63,7 +63,7 @@ func TestPieceNotAvailable(t *testing.T) {
 	board.MustMakeMove(NewMove(Player2, board.Get(0, 0), Medium))
 	board.MustMakeMove(NewMove(Player1, board.Get(1, 1), Small))
 	board.MustMakeMove(NewMove(Player2, board.Get(1, 1), Medium))
-	assert.Error(t, board.MakeMove(NewMove(Player1, board.Get(2, 2), Small)), "Expected mvoe to be illegal")
+	assert.Error(t, board.MakeMove(NewMove(Player1, board.Get(2, 2), Small)), "Expected move to be illegal")
 }
 
 func TestMovingPiece(t *testing.T) {
